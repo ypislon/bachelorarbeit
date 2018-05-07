@@ -37,7 +37,8 @@ websites = {
 
 categories = {
     ("Epoch Times", "deutschland", "europa", "welt", "china", "wirtschaft", "umwelt", "gesundheit", "feuilleton", "sport", "wissen", "lifestyle", "themen/blaulicht", "genial", "wissen/mystery"),
-    ("Journalisten Watch", "inland", "ausland", "klartext", "wirtschaft", "medienkritik", "satire", "freie medien"),
+    # Category "freie-medien" lists other "trusted" websites - might be nice to add some to te sample
+    ("Journalisten Watch", "inland", "ausland", "klartext", "wirtschaft", "medienkritik", "satire"),
     ("Guido Grandt", "politik", "wirtschaftfinanzen", "zeitgeschichte", "medienkritik", "terror", "kriminalitaetpaedokriminalitaet", "geheimgesellschaften", "literatur", "videofilm", "kollegenbeitrag", "goodnews", "wissenschaft"),
     ("Opposition24", "polikritik", "geldreform", "satire", "psychiatrie", "meldungen", "gesellschaft"),
     ("Unzensuriert", "51335", "51327", "51328", "51329", "51330", "51331", "51332", "51333", "51334") }
@@ -58,14 +59,12 @@ def seed_db():
             website_db.article_identifier = article_identifier
             website_db.alexa_ranking = alexa_ranking
             website_db.save()
-        except:
-            # TODO: proper error handling
-            print("error!")
+        except Exception:
+            print("An error occured during seeding the websites.\n" + Exception)
             pass
 
     for category in categories:
         name = category[0]
-        print(category[0])
 
         for i in enumerate(category):
             if(i[0] == 0):
@@ -76,7 +75,6 @@ def seed_db():
                     category_db.name = category[i[0]]
                     category_db.name
                     category_db.save()
-                except:
-                    # TODO: proper error handling
-                    print("error!")
+                except Exception:
+                    print("An error occured during seeding the categories.\n" + Exception)
                     pass
