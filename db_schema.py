@@ -19,8 +19,8 @@ class BaseModel(Model):
         database = db_connection
 
 class Website(BaseModel):
-    name = CharField(null=True)
-    url = CharField(null=True)
+    name = CharField()
+    url = CharField()
     article_page = CharField(null=True)
     article_identifier = CharField(null=True)
     alexa_ranking = IntegerField(null=True)
@@ -30,23 +30,23 @@ class Author(BaseModel):
     name = CharField()
 
 class Article(BaseModel):
-    title = CharField()
+    name = CharField()
     url = CharField()
     content_raw = TextField()
     content_text = TextField()
     date_published = DateField(null=True)
     author_identifier = CharField(null=True)
-    title_identifier = CharField(null=True)
+    name_identifier = CharField(null=True)
     date_identifier = CharField(null=True)
-    website = ForeignKeyField(Website, backref="title")
-    author = ForeignKeyField(Author, backref="name")
+    website = ForeignKeyField(Website, backref="articles")
+    author = ForeignKeyField(Author, backref="articles")
     timestamp = DateTimeField(default=datetime.datetime.now)
 
 class Link(BaseModel):
     url = CharField()
     domain = CharField(null=True)
     link_text = CharField(null=True)
-    article = ForeignKeyField(Article, backref="title")
+    article = ForeignKeyField(Article, backref="links")
     timestamp = DateTimeField(default=datetime.datetime.now)
 
 class Topic(BaseModel):
@@ -54,11 +54,11 @@ class Topic(BaseModel):
 
 class Keyword(BaseModel):
     word = CharField()
-    topic = ForeignKeyField(Topic, backref="name", null=True)
+    topic = ForeignKeyField(Topic, backref="keywords", null=True)
 
 class Category(BaseModel):
     name = CharField()
-    website = ForeignKeyField(Website, backref="name")
+    website = ForeignKeyField(Website, backref="categories")
 
 list_of_models = [Website, Article, Link, Author, Keyword, Topic, Category]
 
@@ -74,8 +74,3 @@ def create_tables(hard_reset = False):
 def drop_tables():
     with db_connection:
         db_connection.drop_tables(list_of_models)
-
-db_connection.connect()
-
-create_tables()
-drop_tables()
