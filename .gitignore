@@ -2,3 +2,4 @@ __pycache__/*
 db_connection.py
 
 article_spider/article_spider/__pycache__/*
+*.pyc
