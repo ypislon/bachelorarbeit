@@ -25,21 +25,20 @@ class Website(BaseModel):
     article_identifier = CharField(null=True)
     alexa_ranking = IntegerField(null=True)
     timestamp = DateTimeField(default=datetime.datetime.now)
+    author_identifier = CharField(null=True)
+    date_identifier = CharField(null=True)
 
 class Author(BaseModel):
     name = CharField()
 
 class Article(BaseModel):
-    name = CharField()
+    title = CharField()
     url = CharField()
-    content_raw = TextField()
-    content_text = TextField()
+    content_raw = TextField(null=True)
+    content_text = TextField(null=True)
     date_published = DateField(null=True)
-    author_identifier = CharField(null=True)
-    name_identifier = CharField(null=True)
-    date_identifier = CharField(null=True)
     website = ForeignKeyField(Website, backref="articles")
-    author = ForeignKeyField(Author, backref="articles")
+    author = ForeignKeyField(Author, backref="articles", null=True)
     timestamp = DateTimeField(default=datetime.datetime.now)
 
 class Link(BaseModel):
