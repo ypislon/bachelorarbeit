@@ -25,8 +25,10 @@ class Website(BaseModel):
     article_identifier = CharField(null=True)
     alexa_ranking = IntegerField(null=True)
     timestamp = DateTimeField(default=datetime.datetime.now)
+    content_identifier = CharField(null=True)
     author_identifier = CharField(null=True)
     date_identifier = CharField(null=True)
+    date_format = CharField(null=True)
 
 class Author(BaseModel):
     name = CharField()
