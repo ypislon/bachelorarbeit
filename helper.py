@@ -1,3 +1,5 @@
+from datetime import date, datetime, timedelta
+
 def parse_articles_url(website):
     url_fragment = website.article_page
     urls = list()

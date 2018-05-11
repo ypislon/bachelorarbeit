@@ -1,5 +1,4 @@
 import scrapy
-from helper import *
 from datetime import time, date, timedelta
 from urllib.parse import urljoin
 
@@ -7,6 +6,7 @@ from urllib.parse import urljoin
 import sys
 sys.path.insert(0, 'C:\\hdm\\bachelorarbeit')
 from db_schema import Website, Article, Link, Author
+from helper import *
 
 class ArticlesSpider(scrapy.Spider):
     name = "articles"
