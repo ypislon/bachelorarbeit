@@ -15,14 +15,14 @@ websites = {
     ("Epoch Times", "https://www.epochtimes.de/", "/$c$/page/$x$", "main a", 6201, "//div[@id='news-content']/p|//div[@id='news-content']/h2", ".post-meta .author", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Halle Leaks", "https://blog.halle-leaks.de/", "/page/$x$", ".entry-title a", 123679, ".entry-content", "", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Info Direkt", "https://www.info-direkt.eu/", "/$y$/$m$/page/$x$", ".entry-title a", 208584, "//div[@class='entry-content']/p|//div[@class='entry-content']/h2|//div[@class='entry-content']/h3|//div[@class='entry-content']/h4", "", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
-    ("Journalisten Watch", "https://www.journalistenwatch.com/", "/category/$c$/page/$x$", ".entry-title a", 10187, "//div[@class='entry-content']/p|//div[@class='entry-content']/h2|//div[@class='entry-content']/h3|//div[@class='entry-content']/h4", ".entry-meta-date a", "%d. %B %Y"),
+    ("Journalisten Watch", "https://www.journalistenwatch.com/", "/category/$c$/page/$x$", ".entry-title a", 10187, "//div[@class='entry-content']/p|//div[@class='entry-content']/h2|//div[@class='entry-content']/h3|//div[@class='entry-content']/h4", "", ".entry-meta-date a", "%d. %B %Y"),
     ("Noch Info", "http://noch.info/", "/page/$x$", ".post-title a", 258831, ".entry-inner", ".vcard.author a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Philosophia Perennis", "https://philosophia-perennis.com/", "/page/$x$", ".post-title a", 27339, ".post-content", ".post-meta-author a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     # Shitload of JS stuff happening here...watch out!
     ("Rapefugees", "http://www.rapefugees.net/", "/page/$x$", ".entry-title a", 911901, ".entry-content", "//meta[@property='article:author']/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Truth24", "http://www.truth24.net/", "/page/$x$", ".entry-title a", 173120, ".entry-content", "//meta[@property='article:author']/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Zuerst", "http://zuerst.de/", "/page/$x$", ".bl2page-title a", 185203, ".single-archive", "", ".single-info", "%d. %B %Y"),
-    ("Blauer Bote", "http://blauerbote.com/", "/page/$x$", ".entry-title a", 355997, ".entry-content", "//time/@datetime", "%Y-%m-%dT%H:%M:%S%z"),
+    ("Blauer Bote", "http://blauerbote.com/", "/page/$x$", ".entry-title a", 355997, ".entry-content", "", "//time/@datetime", "%Y-%m-%dT%H:%M:%S%z"),
     # No real date...
     ("Die Unbestechlichen", "https://dieunbestechlichen.com/", "/page/$x$", "h2.entry-title a", 44740, ".entry-content", ".entry-meta-author .a", ".meta-item span.updated", "text"),
     ("Euro-Med", "http://new.euro-med.dk/", "/page/$x$", ".entry-title a", 139870, ".entry-content", ".author.vcard a", "span.entry-date", "%B %d, %Y"),
@@ -36,7 +36,7 @@ websites = {
     # Example: https://de.sott.net/signs/archive/de/2018/signs20180502.htm
     ("Sott", "https://de.sott.net/", "/signs/archive/de/$y$/signs$y$$m$$d$.htm", ".attl a", 19777, ".article-body", ".mbar a", "//div[@class='m-bar']/text()", "%a, %d $B %Y %H:%M %Z"),
     # Example: https://www.unzensuriert.de/taxonomy/term/51327/all?page=1
-    ("Unzensuriert", "https://www.unzensuriert.de/", "/taxonomy/term/$c$/all?page=$x$", ".field-content a", 249629, ".field.field-name.body", "//meta[@property='article:author']/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z") }
+    ("Unzensuriert", "https://www.unzensuriert.de/", "/taxonomy/term/$c$/all?page=$x$", "li.views-row .field-content a", 249629, ".field.field-name.body", "//meta[@property='article:author']/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z") }
 
 
 categories = {
