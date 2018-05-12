@@ -1,11 +1,10 @@
 import scrapy
-from datetime import time, date, timedelta
 from urllib.parse import urljoin
 
 # TODO: black magic - dont do this!
 import sys
 sys.path.insert(0, 'C:\\hdm\\bachelorarbeit')
-from db_schema import Website, Article, Link, Author
+from db_schema import Website, Article
 from helper import *
 
 class ArticlesSpider(scrapy.Spider):
