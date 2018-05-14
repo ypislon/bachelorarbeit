@@ -11,7 +11,6 @@ class ArticlesSpider(scrapy.Spider):
     name = "articles"
 
     def start_requests(self):
-        urls = list()
         for website in Website.select():
             website, urls_per_website = parse_articles_url(website)
             for url in urls_per_website:
@@ -35,4 +34,4 @@ class ArticlesSpider(scrapy.Spider):
 
             article.save()
 
-        self.log('Saved article %s' % article.title)
+        self.log('Saved article %s' % article.url)

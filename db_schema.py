@@ -31,20 +31,20 @@ class Website(BaseModel):
     date_format = CharField(null=True)
 
 class Author(BaseModel):
-    name = CharField()
+    name = CharField(null=True)
 
 class Article(BaseModel):
-    title = CharField()
+    title = CharField(null=True)
     url = CharField()
     content_raw = TextField(null=True)
     content_text = TextField(null=True)
-    date_published = DateField(null=True)
+    date_published = DateTimeField(null=True)
     website = ForeignKeyField(Website, backref="articles")
     author = ForeignKeyField(Author, backref="articles", null=True)
     timestamp = DateTimeField(default=datetime.datetime.now)
 
 class Link(BaseModel):
-    url = CharField()
+    url = TextField()
     domain = CharField(null=True)
     link_text = CharField(null=True)
     article = ForeignKeyField(Article, backref="links")
