@@ -8,7 +8,6 @@ from db_connection import db_connection
 websites = {
     # Author: is usually in a span with text: "Text: AUTHOR"
     ("Alles Roger", "http://www.allesroger.at/", "/archiv?seite=$x$", ".row div h2 a", 1154989, ".post_content", "", "li.detail.date", "%d.%m.%Y"),
-    # TODO: check if author identifier actually works
     ("Anonymus News", "http://www.anonymousnews.ru/", "/archiv/page/$x$", "h3.entry-title a", 30108, ".td-post-content", "//span[@itemprop='author']/meta[@content]/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     # watch out: author is linked here, need to use ::text to get just the text...
     ("Compact Magazin", "https://www.compact-online.de/", "/compact-archiv/page/$x$", ".post-title a", 30658, "article .post-container .post-content", ".author-info .description a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
@@ -26,7 +25,6 @@ websites = {
     # No real date...
     ("Die Unbestechlichen", "https://dieunbestechlichen.com/", "/page/$x$", "h2.entry-title a", 44740, ".entry-content", ".entry-meta-author .a", ".meta-item span.updated", "text"),
     ("Euro-Med", "http://new.euro-med.dk/", "/page/$x$", ".entry-title a", 139870, ".entry-content", ".author.vcard a", "span.entry-date", "%B %d, %Y"),
-    # No pagination, but per category all articles listed
     ("Guido Grandt", "http://www.guidograndt.de/", "/category/$c$", ".pt-cv-content a", 97481, ".entry-content", ".author.vcard a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("News For Friends", "http://news-for-friends.de/", "/page/$x$", ".entry-title a", 67515, ".td-post-content", ".td-author-by a", "//time/@datetime", "%Y-%m-%dT%H:%M:%S%z"),
     ("No Islam-Noack Finsterwalde", "http://noack-finsterwalde.de/", "/page/$x$" ,".wpex-loop-entry-title a", 2393062, ".wpex-post-content", "", ".wpex-date", "%B %d, %Y"),

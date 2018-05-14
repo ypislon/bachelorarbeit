@@ -16,7 +16,6 @@ def parse_articles_url(website):
                 urls_temp.append(url_temp)
         # replace list of urls with new built list
         urls = urls_temp
-    urls
 
     if "$x$" in url_fragment:
         urls_temp = list()
@@ -28,7 +27,6 @@ def parse_articles_url(website):
                 urls_temp.append(url_temp)
         # replace list of urls with new built list
         urls = urls_temp
-    urls
 
     # create bounds for the date
     # duration should be from 1.3.16 to 1.3.18
@@ -57,13 +55,10 @@ def parse_articles_url(website):
         urls_temp = list()
         for temp_date in daterange(start_date, end_date):
             for url in urls:
-                # TODO: remove, if not necessary
-                # TODO: date time seems to parse the date as "01" anyways
-                # if(temp_date.day < 10):
-                #     date_string = "0" + str(temp_date)
-                # else:
-                date_string = str(temp_date)
-                url_temp = url.replace("$d$", date_string)
+                day_string = str(temp_date.day)
+                if(len(day_string)) == 1:
+                    day_string = "0" + day_string
+                url_temp = url.replace("$d$", day_string)
                 urls_temp.append(url_temp)
         urls = urls_temp
     return website, urls
