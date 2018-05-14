@@ -30,8 +30,11 @@ class ArticlesSpider(scrapy.Spider):
             # create a new article and populate it
             article = Article()
             article.website = website
-            article.url = r_article.css("a::attr(href)").extract_first()
-
+            article_url = r_article.css("a::attr(href)").extract_first()
+            if "http" not in article_url:
+                article.url = urljoin(article.url, article_url)
+            else:
+                article.url = article_url
             article.save()
 
         self.log('Saved article %s' % article.url)
