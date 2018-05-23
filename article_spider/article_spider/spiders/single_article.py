@@ -22,7 +22,6 @@ class ArticlesSpider(scrapy.Spider):
             wa = w.articles
             for i, a in enumerate(wa):
                 if i == 0:
-                    # print(a.url)
                     try:
                         yield scrapy.Request(url=a.url, callback=self.parse, meta={"article_id" : a.id})
                     except:
@@ -39,13 +38,15 @@ class ArticlesSpider(scrapy.Spider):
         # Content (text) assignment
         if "//" in website.content_identifier:
             c_i = response.xpath(website.content_identifier)
-            c_i = c_i.xpath("descendant::*/text()|text()").extract()
+            c_i = c_i.xpath("descendant::*[not(script)]/text()|text()").extract()
         else:
             c_i = response.css(website.content_identifier)
-            c_i = c_i.xpath("descendant::*/text()|text()").extract()
+            c_i = c_i.xpath("descendant::*[not(script)]/text()|text()").extract()
         total_content = ""
         for c in c_i:
             total_content = total_content + c
+        # trim whitespace and line breaks
+        total_content = total_content.replace("\r", "\n").replace("\n\n", "").replace("  ", " ").replace("  ", "")
         article.content_text = total_content
 
         # Content (raw HTML) assignment
@@ -65,6 +66,7 @@ class ArticlesSpider(scrapy.Spider):
         else:
             d_i = response.css(website.date_identifier)
         try:
+            # Remove the + and - from the timezone
             article_date = re.sub(r"([\+|\-]\d\d)(:)(\d\d)", r"\1\3", d_i.extract_first())
             article_date = datetime.strptime(article_date, website.date_format)
             # Note: required format for db:
