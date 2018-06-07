@@ -11,9 +11,9 @@ websites = {
     ("Anonymus News", "http://www.anonymousnews.ru/", "/archiv/page/$x$", "h3.entry-title a", 30108, ".td-post-content", "//span[@itemprop='author']/meta[@content]/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     # watch out: author is linked here, need to use ::text to get just the text...
     ("Compact Magazin", "https://www.compact-online.de/", "/compact-archiv/page/$x$", ".post-title a", 30658, "article .post-container .post-content", ".author-info .description a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
-    ("Epoch Times", "https://www.epochtimes.de/", "/$c$/page/$x$", "main a", 6201, "//div[@id='news-content']/p|//div[@id='news-content']/h2", ".post-meta .author", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
+    ("Epoch Times", "https://www.epochtimes.de/", "/$c$/page/$x$", "main a", 6201, "//div[@id='news-content']/p", ".post-meta .author", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Halle Leaks", "https://blog.halle-leaks.de/", "/page/$x$", ".entry-title a", 123679, ".entry-content", "", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
-    ("Info Direkt", "https://www.info-direkt.eu/", "/$y$/$m$/page/$x$", ".entry-title a", 208584, "//div[@class='entry-content']/p|//div[@class='entry-content']/h2|//div[@class='entry-content']/h3|//div[@class='entry-content']/h4", "", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
+    ("Info Direkt", "https://www.info-direkt.eu/", "/$y$/$m$/page/$x$", ".entry-title a", 208584, ".entry-content", "", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Journalisten Watch", "https://www.journalistenwatch.com/", "/category/$c$/page/$x$", ".entry-title a", 10187, "article .entry-content", "", ".entry-meta-date a", "%d. %B %Y"),
     ("Noch Info", "http://noch.info/", "/page/$x$", ".post-title a", 258831, ".entry-inner", ".vcard.author a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
     ("Philosophia Perennis", "https://philosophia-perennis.com/", "/page/$x$", ".post-title a", 27339, ".post-content", ".post-meta-author a", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z"),
@@ -34,7 +34,7 @@ websites = {
     # Example: https://de.sott.net/signs/archive/de/2018/signs20180502.htm
     ("Sott", "https://de.sott.net/", "/signs/archive/de/$y$/signs$y$$m$$d$.htm", ".attl a", 19777, ".article-body", ".mbar a", "//div[@class='m-bar']/text()", "%a, %d $B %Y %H:%M %Z"),
     # Example: https://www.unzensuriert.de/taxonomy/term/51327/all?page=1
-    ("Unzensuriert", "https://www.unzensuriert.de/", "/taxonomy/term/$c$/all?page=$x$", "li.views-row .field-content a", 249629, ".field.field-name.body", "//meta[@property='article:author']/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z") }
+    ("Unzensuriert", "https://www.unzensuriert.de/", "/taxonomy/term/$c$/all?page=$x$", "li.views-row .field-content a", 249629, "#content .region-content .content .field", "//meta[@property='article:author']/@content", "//meta[@property='article:published_time']/@content", "%Y-%m-%dT%H:%M:%S%z") }
 
 
 categories = {

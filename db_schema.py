@@ -35,7 +35,7 @@ class Author(BaseModel):
 
 class Article(BaseModel):
     title = CharField(null=True)
-    url = CharField()
+    url = CharField(unique=True)
     content_raw = TextField(null=True)
     content_text = TextField(null=True)
     date_published = DateTimeField(null=True)
