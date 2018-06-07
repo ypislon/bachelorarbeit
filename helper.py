@@ -3,6 +3,7 @@ from db_schema import Link
 from lxml import html
 from io import StringIO
 from urllib.parse import urljoin, urlparse
+import logging
 
 def parse_articles_url(website):
     url_fragment = website.article_page
@@ -22,7 +23,7 @@ def parse_articles_url(website):
         for i, url in enumerate(urls):
             # TODO
             # for i in website.article_identifier_max:
-            for j in range(1,5):
+            for j in range(1,500):
                 url_temp = url.replace("$x$", str(j))
                 urls_temp.append(url_temp)
         # replace list of urls with new built list
@@ -70,38 +71,40 @@ def daterange(start_date, end_date):
 def parse_articles_links(article):
     ### Find all links in the articles and create database entries
     content_raw = StringIO(article.content_raw)
-    try:
-        tree = html.parse(content_raw)
-        links = tree.xpath('//a[@href]')
-        for link in links:
-            # Filter for broken links or javascrpt links
-            if len(link.xpath('@href')) == 0:
-                pass
-            if "javascript" in link.xpath('@href')[0]:
-                pass
+    # try:
+    tree = html.parse(content_raw)
+    links = tree.xpath('//a[@href]')
+    for link in links:
+        # Filter for broken links or javascrpt links
+        if len(link.xpath('@href')) == 0:
+            pass
+        if "javascript" in link.xpath('@href')[0]:
+            pass
 
-            link_db = Link()
-            link_db.article = article
+        link_db = Link()
+        link_db.article = article
 
-            # Get the url
-            if "http" not in link.xpath('@href')[0]:
-                link_db.url = urljoin(article.url, link.xpath('@href')[0])
-            else:
-                link_db.url = link.xpath('@href')[0]
+        # Get the url
+        if "http" not in link.xpath('@href')[0]:
+            link_db.url = urljoin(article.url, link.xpath('@href')[0])
+        else:
+            link_db.url = link.xpath('@href')[0]
 
-            # Parse the domain
-            try:
-                link_parsed = urlparse(link_db.url)
-                link_db.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=link_parsed)
-            except:
-                link_db.domain = None
+        # Parse the domain
+        try:
+            link_parsed = urlparse(link_db.url)
+            link_db.domain = '{uri.scheme}://{uri.netloc}/'.format(uri=link_parsed)
+        except:
+            link_db.domain = None
 
-            # Try to extract the link text
-            try:
-                link_db.link_text = link.xpath('text()')[0]
-            except:
-                link_db.link_text = None
+        # Try to extract the link text
+        try:
+            link_db.link_text = link.xpath('text()')[0]
+        except:
+            link_db.link_text = None
 
-            link_db.save()
-    except:
-        print("Cannot parse tree!")
+        link_db.save()
+    # except:
+    #     # print("Cannot parse tree! URL: %s" % article.url)
+    #     logging.basicConfig(filename="parsing_single_article.txt", filemode='a', level=logging.INFO)
+    #     logging.error("Cannot parse tree! URL: %s" % article.url)

@@ -13,7 +13,9 @@ class ArticlesSpider(scrapy.Spider):
     def start_requests(self):
         for website in Website.select():
             website, urls_per_website = parse_articles_url(website)
+
             for url in urls_per_website:
+                # construct full url from base url and parsed fragment
                 url = urljoin(website.url, url)
                 yield scrapy.Request(url=url, callback=self.parse, meta={"website_name" : website.name})
 
@@ -32,9 +34,9 @@ class ArticlesSpider(scrapy.Spider):
             article.website = website
             article_url = r_article.css("a::attr(href)").extract_first()
             if "http" not in article_url:
-                article.url = urljoin(article.url, article_url)
+                article.url = urljoin(website.url, article_url)
             else:
                 article.url = article_url
             article.save()
 
-        self.log('Saved article %s' % article.url)
+            self.log('Saved article %s' % article.url)

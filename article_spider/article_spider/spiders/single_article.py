@@ -12,20 +12,16 @@ class ArticlesSpider(scrapy.Spider):
     name = "single_articles"
 
     def start_requests(self):
-        # articles = Article.select()
-        # for article in articles:
-        #     yield scrapy.Request(url=article.url, callback=self.parse, meta={"article_id" : article.id})
-
-        # test one article for each website
         ws = Website.select()
         for w in ws:
             wa = w.articles
             for i, a in enumerate(wa):
-                if i == 0:
-                    try:
-                        yield scrapy.Request(url=a.url, callback=self.parse, meta={"article_id" : a.id})
-                    except:
-                        print("Error at url %s", a.url)
+                # for testing purposes
+                # if i == 0:
+                try:
+                    yield scrapy.Request(url=a.url, callback=self.parse, meta={"article_id" : a.id})
+                except:
+                    print("Error at url %s", a.url)
 
     def parse(self, response):
         # Get the article from the db
@@ -34,6 +30,17 @@ class ArticlesSpider(scrapy.Spider):
 
         # Title assignment
         article.title = response.xpath("//title/text()").extract_first()
+
+        # Content (raw HTML) assignment
+        if "//" in website.content_identifier:
+            cr_i = response.xpath(website.content_identifier)
+        else:
+            cr_i = response.css(website.content_identifier)
+        cr_i = cr_i.extract()
+        total_content = ""
+        for cr in cr_i:
+            total_content = total_content + cr
+        article.content_raw = total_content
 
         # Content (text) assignment
         if "//" in website.content_identifier:
@@ -48,17 +55,6 @@ class ArticlesSpider(scrapy.Spider):
         # trim whitespace and line breaks
         total_content = total_content.replace("\r", "\n").replace("\n\n", "").replace("  ", " ").replace("  ", "")
         article.content_text = total_content
-
-        # Content (raw HTML) assignment
-        if "//" in website.content_identifier:
-            cr_i = response.xpath(website.content_identifier)
-        else:
-            cr_i = response.css(website.content_identifier)
-        cr_i = cr_i.extract()
-        total_content = ""
-        for cr in cr_i:
-            total_content = total_content + cr
-        article.content_raw = total_content
 
         # Published date assignment
         if "//" in website.date_identifier:
