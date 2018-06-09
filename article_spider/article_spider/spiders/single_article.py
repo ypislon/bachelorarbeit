@@ -1,6 +1,8 @@
 import scrapy
 from datetime import date, datetime, timedelta
 import re
+import locale
+locale.setlocale(locale.LC_ALL, '')
 
 # TODO: black magic - dont do this!
 import sys
