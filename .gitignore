@@ -7,3 +7,11 @@ article_spider/article_spider/__pycache__/*
 .RData
 .Rhistory
 *.Rproj
+
+analysis/render_networks/*
+analysis/render_pictures/*
+analysis/**/*.xlsx
+analysis/**/*.csv
+network-full-nodes_files/*
+network-sample-nodes_files/*
+log.txt
