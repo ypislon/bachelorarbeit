@@ -178,9 +178,10 @@ g3 %>%
 # interesting: layout_with_kk, drl, fr
 g3 %>% plot(layout = layout_with_drl(.))
 
-g3 %>% add_layout_(with_fr()) %>% visNetwork::visIgraph()
-
-visNetwork::visIgraph(g3)
+g3 %>% add_layout_(with_kk()) %>% visNetwork::visIgraph() %>%
+  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), 
+             nodesIdSelection = TRUE) %>%
+  visSave("network-sample-nodes.html", selfcontained = FALSE)
 
 ### try out first network measures
 
@@ -206,7 +207,7 @@ plot(clb, g3)
 # filter links - remove social media platforms, plugin data, meta data and others 
 
 ### list of nodes to ignore
-ignore_nodes <- c("linkedin", "wikipedia", "wikimedia", "commons", "google", "youtube", "telegram", "whatsapp", "facebook", "vk.com", "t.co", "mailto", "javascript", "creativecommons", "xing", "pinterest", "addtoany", "amzn.to", "twitter")
+ignore_nodes <- c("linkedin", "wikipedia", "wikimedia", "commons", "google", "youtube", "telegram", "whatsapp", "facebook", "vk.com", "t.co", "mailto", "javascript", "creativecommons", "xing", "pinterest", "addtoany", "amzn.to", "twitter", "instagram", "vkontakte", "youtu.be", "vimeo", "amazon", "ebay")
 
 filtered_links <- all_links
 
@@ -276,24 +277,24 @@ plot(g4)
 g4 %>%
   add_layout_(with_kk()) %>%
   visNetwork::visIgraph() %>%
-  visInteraction(navigationButtons = TRUE)
+  visInteraction(navigationButtons = TRUE) %>%
+  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE) %>%
+  visSave("network-full-nodes.html", selfcontained = FALSE)
 
 ##### network of sample websites and mainstream media outlets #####
+
+
 
 
 ##### network of sample websites and internet platforms #####
 
 platforms <- c("linkedin", "wikipedia", "wikimedia", "commons", "google", "youtube", "telegram", "whatsapp", "facebook", "vk.com", "t.co", "mailto", "javascript", "creativecommons", "xing", "pinterest", "addtoany", "amzn.to", "twitter")
 
+platforms <- "linkedin|wikipedia|wikimedia|commons|google|youtube|telegram|whatsapp|facebook|vk.com|mailto|javascript|creativecommons|xing|pinterest|addtoany|amzn.to|twitter"
+
 filtered_links_2 <- all_links
 
-
-# TODO
-### add links which contain the "no nodes" list - exceptions like facebook pages etc.
-for (i in platforms) {
-  filtered_links_2 <- filtered_links_2 %>% 
-    filter(str_detect(filtered_links_2$link_url , i))
-}
+filtered_links_2 <- filter(filtered_links_2, str_detect(filtered_links_2$link_url , regex(platforms)))
 
 ### remove links pointing to itself
 filtered_links_2 %<>%
@@ -325,7 +326,6 @@ flat_filtered_links_2 <- filtered_links_2 %>%
 g6 <- graph_from_data_frame(flat_filtered_links_2)
 
 g6 %>% visIgraph()
-
 
 ##### articles by date ##### 
 
@@ -392,7 +392,7 @@ V(g5)$color <- ifelse(!is.na(as.numeric(V(g5)$name)), "blue", "green")
 
 g5 <- set_vertex_attr(g5, "label.color", value = "None")
 
-g5 %>% visIgraph() %>% visInteraction(navigationButtons = TRUE) %>% visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) # %>% visExport(name = "article_graph")
+g5 %>% visIgraph() %>% visInteraction(navigationButtons = TRUE) %>% visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>% visExport(name = "article_graph")
 
 # TODO doesnt work yet 
 
@@ -494,6 +494,14 @@ emotion_results <- tidy_articles_text %>%
 View(emotion_results)
 
 ##### STOP NLP #####
+
+all_articles %>%
+  filter(date_published == "" | is.na(date_published)) %>%
+  group_by(website_id) %>%
+  summarise(n()) %>% View()
+
+
+
 
 # close the db connection
 dbDisconnect(con)
