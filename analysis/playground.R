@@ -468,11 +468,11 @@ tidy_articles_text %>% count(word, name, sort = TRUE) %>% filter(n > 5000) %>% V
 
 ### german / austrian party lookup
 
-parties <- c("spd", "fdp", "csu", "cdu", "grünen", "grün", "afd", "npd", "spö") %>% as.tibble()
+parties <- c("spd", "fdp", "csu", "cdu", "grünen", "grün", "afd", "npd", "spö", "linke") %>% as.tibble()
 
 txx <- tx
 
-txx %>% filter(word %in% parties$value)
+txx %>% filter(word %in% parties$value) %>% View()
 
 ### calculate a score for each website for each emotion...
 # load emotion lexicon
@@ -493,14 +493,39 @@ emotion_results <- tidy_articles_text %>%
 
 View(emotion_results)
 
+# add emotion sentiments to vertices of graph
+V(graph1)$positive <- emotion_results$Positive
+V(graph1)$negative <- emotion_results$Negative
+V(graph1)$anger <- emotion_results$Anger
+V(graph1)$anticipation <- emotion_results$Anticipation
+V(graph1)$disgust <- emotion_results$Disgust
+V(graph1)$fear <- emotion_results$Fear
+V(graph1)$joy <- emotion_results$Joy
+V(graph1)$sadness <- emotion_results$Sadness
+V(graph1)$surprise <- emotion_results$Surprise
+V(graph1)$trust <- emotion_results$Trust
+
 ##### STOP NLP #####
+
+##### import ranking of similarweb and add to the graph ######
+
+popularity_ranking <- read_excel("c://hdm/bachelorarbeit/analysis/text_mining/resources/Sample_Charakterisierung.xlsx")
+
+all_websites_w_ranking <- all_websites %>%
+  inner_join(popularity_ranking, by = c("id" = "ID"))
+
+V(graph1)$website_id <- all_websites_w_ranking %>% arrange(name) %$% id
+V(graph1)$popularity_ranking <- all_websites_w_ranking %>% arrange(name) %$% `Country Rank` %>% as.numeric()
+V(graph1)$claim <- all_websites_w_ranking %>% arrange(name) %$% Claim
+V(graph1)$total_visits <- all_websites_w_ranking %>% arrange(name) %$% `Total Visits (K)` %>% as.numeric()
+V(graph1)$referrals <- all_websites_w_ranking %>% arrange(name) %$% `-> referrals (%)` %>% as.numeric()
+V(graph1)$redaktionsstaerke <- all_websites_w_ranking %>% arrange(name) %$% `Redaktionsstärke` %>% as.numeric()
+V(graph1)$standort <- all_websites_w_ranking %>% arrange(name) %$% `Standort laut Impressum`
 
 all_articles %>%
   filter(date_published == "" | is.na(date_published)) %>%
   group_by(website_id) %>%
   summarise(n()) %>% View()
-
-
 
 
 # close the db connection

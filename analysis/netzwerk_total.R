@@ -56,8 +56,8 @@ sample_links_clean <- sample_links %>%
   mutate(link_url = str_remove(link_url, "www.")) %>%
   mutate(link_url = str_remove(link_url, "/"))
 
-platforms <- "linkedin|wikipedia|wikimedia|commons|google|youtube|telegram|whatsapp|facebook|vk.com|mailto|javascript|creativecommons|xing|pinterest|addtoany|amzn.to|twitter|instagram|vkontakte|youtu.be|vimeo|amazon|ebay|imgur|medium|yahoo"
-# flickr, tumblr, t.co
+platforms <- "linkedin|wikipedia|wikimedia|commons|google|youtube|telegram|whatsapp|facebook|vk.com|mailto|javascript|creativecommons|xing|pinterest|addtoany|amzn.to|twitter|instagram|vkontakte|youtu.be|vimeo|amazon|ebay|imgur|medium|yahoo|flickr|tumblr|http"
+# t.co will be filtered out later
 
 sample_links_without_platforms <- sample_links_clean %>%
   filter(!str_detect(link_url, platforms)) %>%
@@ -91,6 +91,8 @@ E(graph2)$weight <- E(graph2)$linked_count
 E(graph2)$width <- E(graph2)$weight / 250
 V(graph2)$size <- V(graph2)$deg_in * 5
 
+# coreness(graph2, mode = "in") %>% as.tibble() %>% View()
+
 ##### calculate network dimensions #####
 
 edge_density(graph2)
@@ -104,4 +106,55 @@ graph2_as_df %<>% mutate(connection = paste(as.character(from), "/", as.characte
 
 ggplot(graph2_as_df, aes(x = linked_count)) +
   geom_density()
+
+
+##### experiments #####
+
+mainstream_medien <- read_xlsx('c:/hdm/bachelorarbeit/analysis/text_mining/resources/Mainstream-Medien_komplett.xlsx', col_names = c("name", "url"))
+
+mainstream_medien <- mainstream_medien %>%
+  mutate(url = str_remove(url, "http.{0,1}://")) %>%
+  mutate(url = str_remove(url, "www."))
+
+sample_links_only_mainstream_media <- sample_links_clean %>%
+  filter(str_detect(link_url, mainstream_medien$url))
+
+flat_sample_links_only_mainstream_media <- sample_links_only_mainstream_media %>%
+  group_by(website_url, link_url) %>%
+  summarise(linked_count = n())
+
+graph3 <- graph_from_data_frame(flat_sample_links_only_mainstream_media)
+
+V(graph3)$size <- degree(graph3, mode = "in") * 2
+E(graph3)$width <- E(graph3)$linked_count
+
+graph3 %>% visIgraph()
+
+##
+
+dorian_sample <- "alpenschau|austropress|bayern-depesche|berlinjournal|deutsch.rt.com|contra-magazin|denken-macht-frei|deutsche-wirtschafts-nachrichten|fmpolitics|freiewelt|freiezeiten|kenfm|netzfrauen|newpi|pi-news|propagandaschau|zeitenschrift|bereicherungswahrheit|blaue-flora|freisleben-news|gegenfrage|labour|mmnews|perspektive|sputnik|wsws"
+
+sample_links_dorian_sample <- sample_links_clean %>%
+  filter(str_detect(link_url, dorian_sample))
+
+## TODO: filter sputnik links and assign them to one node
+k = 0
+for (s in sample_links_dorian_sample$link_url) {
+  if(str_detect(s, "sputnik")) {
+    #print(s)
+    print(sample_links_dorian_sample$link_url[k])
+  }
+  k = k + 1
+}
+
+flat_sample_links_dorian_sample <- sample_links_dorian_sample %>%
+  group_by(website_url, link_url) %>%
+  summarise(linked_count = n())
+
+graph4 <- graph_from_data_frame(flat_sample_links_dorian_sample)
+
+V(graph4)$size <- degree(graph4, mode = "in") * 2
+E(graph4)$width <- E(graph4)$linked_count / 1000
+
+graph4 %>% visIgraph()
 
