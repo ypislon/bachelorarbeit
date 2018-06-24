@@ -1,0 +1,84 @@
+ @import url('https://fonts.googleapis.com/css?family=Open+Sans');
+
+#customWidget {
+  font-family: "Open Sans", sans-serif;
+  font-size: 14px;
+  border: 2px solid #97c2fc;
+  margin: 8px 0;
+  width: 960px;
+}
+
+#customWidget div {
+  font-size: 12px;
+}
+
+#customWidget .main-content div, #customWidget .main-content span {
+  font-size: 15px;
+}
+
+#customWidget div span {
+  font-size: 18px;
+}
+
+#customWidget .content {
+  display: flex;
+}
+
+#customWidget hr {
+  /* height: 4px; */
+  color: #97c2fc;
+  font-size: 0;
+}
+
+.website-description {
+  flex: 1;
+}
+
+.website-data {
+  flex: 1;
+  flex-direction: row;
+  display: flex;
+}
+
+.numbers span {
+  display: block;
+}
+
+.main-content {
+  display: flex;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  font-size: 16px;
+  background-color: #97c2fc;
+  color: #ffffff;
+  padding: 8px;
+}
+
+#customWidget .header div span {
+  font-size: 16px;
+}
+
+.container {
+  padding: 8px;
+}
+
+.container div {
+  margin: 8px;
+}
+
+/* sentiment analysis */
+
+.sentiments {
+  display: flex;
+  flex-direction: row;
+}
+
+.sentiments > div {
+  flex: 1;
+}
