@@ -67,16 +67,31 @@ flat_sample_links_without_platforms <- sample_links_without_platforms %>%
   group_by(website_url, link_url) %>%
   summarise(linked_count = n()) %>%
   filter(!(link_url == "t.co")) %>%
-  filter(linked_count >= 1)
+  filter(linked_count >= 0)
 
 ##### generate graph #####
 
 graph2 <- graph_from_data_frame(flat_sample_links_without_platforms)
 
 graph2 %>% visIgraph() %>%
-  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE)
+  visOptions(highlightNearest = list(enabled = TRUE, hover = FALSE, degree = 0), nodesIdSelection = TRUE)
 
-graph2 %>% visIgraph() %>% visExport(type = "png", name = "network_full")
+graph2_as_data_frame <- as_long_data_frame(graph2) %>% as.tibble()
+
+graph2_vertex_metrics_incoming <- graph2_as_data_frame %>%
+  group_by(to_name) %>%
+  summarise(deg_in = n(), linked_count_total_incoming = sum(linked_count), average_weight_of_incoming_edge = (sum(linked_count) / n()), poi_deg_in_times_linked_count = (sum(linked_count) * n()), page_ranking = round(to_page_ranking[1], 6), stren = to_stren[1]) %>%
+  select(-poi_deg_in_times_linked_count)
+
+graph2_vertex_metrics_outgoing <- graph2_as_data_frame %>%
+  group_by(from_name) %>%
+  summarise(deg_out = n(), linked_count_total_outgoing = sum(linked_count), average_weight_of_outgoing_edge = (sum(linked_count) / n()))
+
+setwd("./analysis/render_networks")
+write.csv(graph2_vertex_metrics_incoming, file = "full_network_vertex_metrics_incoming.csv")
+write.csv(graph2_vertex_metrics_outgoing, file = "full_network_vertex_metrics_outgoing.csv")
+
+#graph2 %>% visIgraph() %>% visExport(type = "png", name = "network_full")
 
 plot(graph2)
 
@@ -90,6 +105,8 @@ V(graph2)$closen <- closeness(graph2)
 E(graph2)$weight <- E(graph2)$linked_count
 E(graph2)$width <- E(graph2)$weight / 250
 V(graph2)$size <- V(graph2)$deg_in * 5
+
+V(graph2)$page_ranking <- page_rank(graph2)$vector
 
 # coreness(graph2, mode = "in") %>% as.tibble() %>% View()
 
@@ -128,7 +145,7 @@ graph3 <- graph_from_data_frame(flat_sample_links_only_mainstream_media)
 V(graph3)$size <- degree(graph3, mode = "in") * 2
 E(graph3)$width <- E(graph3)$linked_count
 
-graph3 %>% visIgraph()
+graph3 %>% visIgraph() %>% visOptions(nodesIdSelection = TRUE)
 
 ##
 
@@ -156,5 +173,12 @@ graph4 <- graph_from_data_frame(flat_sample_links_dorian_sample)
 V(graph4)$size <- degree(graph4, mode = "in") * 2
 E(graph4)$width <- E(graph4)$linked_count / 1000
 
-graph4 %>% visIgraph()
+graph4 %>% visIgraph() %>% visOptions(nodesIdSelection = TRUE)
 
+ffff <- rbind(flat_sample_links_dorian_sample, flat_sample_links_only_mainstream_media)
+
+gffff %>% visIgraph() %>% visOptions(nodesIdSelection = TRUE)
+
+gffff <- graph_from_data_frame(ffff)
+V(gffff)$size <- degree(gffff, mode = "in") * 2
+E(gffff)$width <- E(gffff)$linked_count / 1000

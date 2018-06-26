@@ -49,14 +49,18 @@ sample_links <- all_links %>%
   filter(!(link_url==website_url))
 
 sample_links_internal <- sample_links %>%
-  inner_join(all_websites, by=c("link_url" = "url")) %>%
   mutate(website_url = str_remove(website_url, "http.{0,1}://")) %>%
   mutate(website_url = str_remove(website_url, "www.")) %>%
   mutate(website_url = str_remove(website_url, "/")) %>%
   mutate(link_url = str_remove(link_url, "http.{0,1}://")) %>%
   mutate(link_url = str_remove(link_url, "www.")) %>%
   mutate(link_url = str_remove(link_url, "/")) %>%
-  filter(!(link_url==website_url))
+  filter(!(link_url==website_url)) %>%
+  inner_join((all_websites %>% 
+               mutate(url = str_remove(url, "http.{0,1}://")) %>%
+               mutate(url = str_remove(url, "www.")) %>%
+               mutate(url = str_remove(url, "/"))), 
+             by=c("link_url" = "url"))
 
 sample_links_clean <- sample_links %>%
   mutate(website_url = str_remove(website_url, "http.{0,1}://")) %>%
@@ -70,16 +74,8 @@ flat_sample_links_internal <- sample_links_internal %>%
   group_by(website_url, link_url) %>%
   summarise(linked_count = n(), id[1])
 
-flat_sample_links_internal_threshold <- flat_sample_links_internal %>%
-  filter(linked_count >= 3)
-
-g333 <- graph_from_data_frame(flat_sample_links_internal_threshold)
-E(g333)$weight <- E(g333)$linked_count
-E(g333)$width <- E(g333)$linked_count / 5
-g333 %>% visIgraph()
-
-as.data.frame(V(graph1)) %>%
-  inner_join(article_count_per_website, by = c("name" = "url"))
+#as.data.frame(V(graph1)) %>%
+  #inner_join(article_count_per_website, by = c("name" = "url"))
 
 ##### generate graph #####
 
@@ -90,7 +86,7 @@ g1_undirected_each <- as.undirected(graph1, mode = "each")
 g1_undirected <- as.undirected(graph1, mode = "mutual")
 
 # render networks with visNetwork, select field for id and hover
-setwd("./analysis/render_networks")
+setwd("./../render_networks")
 graph1 %>% visIgraph() %>%
   visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE) #%>%
   #visSave(file = "network_internal_size_of_deg_in_indexed.html", selfcontained = FALSE)
@@ -101,20 +97,13 @@ graph1 %>% visIgraph() %>%
   visInteraction(navigationButtons = TRUE) %>%
   visEvents(selectNode = "function(properties) {
               showCustomWidget(this.body.data.nodes.get(properties.nodes[0]));
-              //var button = document.querySelector('size-select');
-              //this.body.data.nodes.set(properties.nodes[0]).size = this.body.data.nodes.get(properties.nodes[0]).betw;
-              this.body.data.nodes.size = 1;
-console.log(this.size);
-console.log(this.body.data.nodes.size);
-              this.size = 1;
-console.log(this.size);
             }",
             selectEdge = "function(properties) {
               showCustomEdgeWidget(this.body.data.edges.get(properties.edges[0]));
             }") %>%
   visSave(file = "internal-interactive-network.html")
 
-# render interactive, undirected network with vertex metrics of
+# render interactive, undirected network with vertex metrics
 g1_undirected %>% visIgraph() %>%
   visOptions(nodesIdSelection = TRUE) %>%
   visInteraction(navigationButtons = TRUE) %>%
@@ -122,7 +111,7 @@ g1_undirected %>% visIgraph() %>%
             alert(
               'Website: ' + this.body.data.nodes.get(properties.nodes[0]).id + '\\n' + 'Degree: ' + this.body.data.nodes.get(properties.nodes[0]).deg + '\\n' + 'Incoming Degrees: ' + this.body.data.nodes.get(properties.nodes[0]).deg_in + '\\n' + 'Outgoing Degree: ' + this.body.data.nodes.get(properties.nodes[0]).deg_out + '\\n' + 'Veröffentlichte Artikel: ' + this.body.data.nodes.get(properties.nodes[0]).article_count + '\\n' + 'Closeness (In&Out): ' + this.body.data.nodes.get(properties.nodes[0]).closen + '\\n' + 'Betweenness: ' + this.body.data.nodes.get(properties.nodes[0]).betw + '\\n' + 'Degree: ' + this.body.data.nodes.get(properties.nodes[0]).deg + '\\n'
             )
-            }") # %>%
+            }") %>%
   visSave(file = "internal-interactive-network-undirected.html")
 
 # calculate centrality values
@@ -136,18 +125,14 @@ V(g1_undirected)$closen_out <- closeness(g1_undirected, mode = "out")
 
 V(g1_undirected)$betw <- betweenness(g1_undirected)
 
+V(g1_undirected)$transit <- transitivity(g1_undirected, type = "local")
+
+
 # set attributes for plotting
 V(g1_undirected)$size <- V(g1_undirected)$closen * 800
 E(g1_undirected)$width <- E(g1_undirected)$weight / 20
 
 ##### change graph attributes #####
-
-# get count of articles in sample
-a1_sample <- all_articles %>%
-  inner_join(all_websites, by = c("website_id" = "id")) %>%
-  filter(as.Date(date_published) >= "2016-03-01" & as.Date(date_published) <= "2018-03-01") %>%
-  group_by(name) %>%
-  summarise(articles_count = n(), website_id[1])
 
 # add article count to graph
 for (v in V(graph1)) {
@@ -214,11 +199,9 @@ V(graph1)$betw <- betweenness(graph1)
 V(graph1)$eigenv <- as.numeric(eigen_centrality(graph1)$vector)
 V(graph1)$page_rank <- as.numeric(page_rank(graph1)$vector)
 
-V(graph1)$transit <- transitivity(g1_undirected, type = "local")
+#coreness(graph1, mode = "in") %>% as.tibble()
 
-coreness(graph1, mode = "in") %>% as.tibble() %>% View()
-
-coreness(graph1, mode = c("all"))
+#coreness(graph1, mode = c("all"))
 
 # change plot settings
 V(graph1)$size <- V(graph1)$deg_in
@@ -319,6 +302,8 @@ g_v_values_list <- as.tibble(V(graph1)$name) %>%
   inner_join(g_page_rank)
 
 write.csv(g_v_values_list, file = "vertex_metrics.csv")
+
+as_long_data_frame(graph1) %>% View()
 
 ### calculate weight of degrees (in/out) for the vertices ###
 
@@ -455,8 +440,10 @@ network_internal_link_count_per_page <- as_long_data_frame(graph1) %>%
   group_by(name = from_name) %>%
   summarise(count = sum(linked_count))
 
+as_long_data_frame(graph2) %>% View()
+
 network_full_link_count_per_page <- as_long_data_frame(graph2) %>%
-  select(name = `ver[el[, 1], ]`, linked_count, to) %>%
+  select(name = from_name, linked_count, to) %>%
   group_by(name) %>%
   summarise(count = sum(linked_count))
 
@@ -466,15 +453,16 @@ ratio_links_internal_vs_full <- network_full_link_count_per_page %>%
 
 ## print graphs
 
-ggsave("Eingehende_Verbindungen.png", plot = pp_1, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Ausgehende Verbindungen.png", plot = pp_2, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Anzahl der eingehenden Verlinkungen je Website.png", plot = pp_4, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Anzahl der ausgehenden Verlinkungen je Website.png", plot = pp_5, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Betweenness Centrality.png", plot = pp_6, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Closeness Centrality.png", plot = pp_7, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Verhältnis Eingehende Verlinkungen vs. Ausgehende Verlinkungen.png", plot = pp_8, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Eigen-Vektor Zentralität.png", plot = pp_9, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Anzahl der ausgehenden Verbindungen mit Gewichtung.png", plot = pp_10, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
+setwd("./../render_pictures")
+ggsave("Eingehende_Verbindungen.png", plot = pp_1, width = 40, height = 30, units = "cm")
+ggsave("Ausgehende Verbindungen.png", plot = pp_2, width = 40, height = 30, units = "cm")
+ggsave("Anzahl der eingehenden Verlinkungen je Website.png", plot = pp_4, width = 40, height = 30, units = "cm")
+ggsave("Anzahl der ausgehenden Verlinkungen je Website.png", plot = pp_5, width = 40, height = 30, units = "cm")
+ggsave("Betweenness Centrality.png", plot = pp_6, width = 40, height = 30, units = "cm")
+ggsave("Closeness Centrality.png", plot = pp_7, width = 40, height = 30, units = "cm")
+ggsave("Verhältnis Eingehende Verlinkungen vs. Ausgehende Verlinkungen.png", plot = pp_8, width = 40, height = 30, units = "cm")
+ggsave("Eigen-Vektor Zentralität.png", plot = pp_9, width = 40, height = 30, units = "cm")
+ggsave("Anzahl der ausgehenden Verbindungen mit Gewichtung.png", plot = pp_10, width = 40, height = 30, units = "cm")
 
 ##### community detection #####
 
@@ -488,10 +476,12 @@ g_c_optimal <- cluster_optimal(graph1)
 g_c_spinglass <- cluster_spinglass(graph1, weights = E(graph1)$weight)
 g_c_walktrap <- cluster_walktrap(graph1, weights = E(graph1)$weight)
 
+getwd()
+
 # plot and save to disk
-# png(filename = "./analysis/render_networks/communities_optimal_algo.png", width = 1024, height = 1024, units = "px")
-plot(g_c_walktrap, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.15)
-# dev.off()
+#png(filename = "communities_optimal_algo.png", width = 1024, height = 1024, units = "px")
+plot(g_c_optimal, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.15)
+#dev.off()
 
 # take a look at the undirected graph
 g_c_fast_greedy <- cluster_fast_greedy(g1_undirected_each)
@@ -518,16 +508,20 @@ cohesion(graph1)
 plot(cohesive_blocks(g1_undirected), g1_undirected)
 plot(cohesive_blocks(igraph::simplify(g1_undirected)), g1_undirected)
 
-c_b <- cohesive_blocks(igraph::simplify(g1_undirected))
+g1_undirected_simple <- igraph::simplify(g1_undirected)
+
+c_b <- cohesive_blocks(g1_undirected_simple)
 length(c_b)
+
 plot(c_b, g1_undirected)
 
 blocks(c_b)
 cohesion(c_b)
 
-g_c_b <- graphs_from_cohesive_blocks(blocks(c_b), igraph::simplify(g1_undirected))
+# plot the most cohesive block
+induced_subgraph(g1_undirected_simple, blocks(c_b)[[4]]) %>% plot()
 
-?graphs_from_cohesive_blocks
+g_c_b <- graphs_from_cohesive_blocks(c_b, g1_undirected_simple)
 
 ################### experiments #####
 
@@ -549,15 +543,12 @@ compare(g_c_optimal, g_c_spinglass, method = "adjusted.rand")
 communities(g_c_optimal)
 membership(g_c_optimal)
 
-induced_subgraph(graph1, c(1, 2, 3))
-plot(induced_subgraph(graph1, c(1, 2, 3)))
-
 ##### construct subgraph with most dense block, adding authors #####
 
 # render subgraph of most dense cluster / block
 # graph1 needs to be "simple" without any attributes, optionally the size of V and width of E
 g33 <- graph_from_data_frame(flat_sample_links_internal) %>%
-  induced_subgraph(c(5, 9, 14, 15)) %>%
+  induced_subgraph(c("dieunbestechlichen.com", "journalistenwatch.com", "philosophia-perennis.com", "opposition24.com")) %>%
   set_edge_attr("color", value = "darkgrey") %>%
   set_vertex_attr("shape", value = "circle") +
   edge("opposition24.com", "dieunbestechlichen.com", color = "yellow") +

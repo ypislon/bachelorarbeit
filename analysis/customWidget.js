@@ -7,8 +7,10 @@ var showCustomWidget = function(props) {
   // add them to the widget
   attributes.forEach(function(attribute) {
     var attribute_element = document.querySelector(`.${attribute} span`);
-    if(!isNaN(props[attribute]) && props[attribute] % 1 != 0) {
-      attribute_element.textContent = props[attribute].toFixed(6);
+    if(!isNaN(props[attribute]) && Number(props[attribute]) % 1 != 0) {
+      attribute_element.textContent = Number(props[attribute]).toFixed(6).toLocaleString();
+    } else if(!isNaN(props[attribute])) {
+      attribute_element.textContent = Number(props[attribute]).toLocaleString();
     } else {
       attribute_element.textContent = props[attribute];
     }

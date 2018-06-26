@@ -509,24 +509,28 @@ V(graph1)$trust <- emotion_results$Trust
 
 ##### import ranking of similarweb and add to the graph ######
 
-popularity_ranking <- read_excel("c://hdm/bachelorarbeit/analysis/text_mining/resources/Sample_Charakterisierung.xlsx")
+popularity_ranking <- read_excel("c://hdm/bachelorarbeit/analysis/text_mining/resources/Sample_Charakterisierung.xlsx") %>% filter(!is.na(URL))
 
-all_websites_w_ranking <- all_websites %>%
-  inner_join(popularity_ranking, by = c("id" = "ID"))
-
-V(graph1)$website_id <- all_websites_w_ranking %>% arrange(name) %$% id
-V(graph1)$popularity_ranking <- all_websites_w_ranking %>% arrange(name) %$% `Country Rank` %>% as.numeric()
-V(graph1)$claim <- all_websites_w_ranking %>% arrange(name) %$% Claim
-V(graph1)$total_visits <- all_websites_w_ranking %>% arrange(name) %$% `Total Visits (K)` %>% as.numeric()
-V(graph1)$referrals <- all_websites_w_ranking %>% arrange(name) %$% `-> referrals (%)` %>% as.numeric()
-V(graph1)$redaktionsstaerke <- all_websites_w_ranking %>% arrange(name) %$% `Redaktionsstärke` %>% as.numeric()
-V(graph1)$standort <- all_websites_w_ranking %>% arrange(name) %$% `Standort laut Impressum`
+for (v in V(graph1)) {
+  for (w in popularity_ranking$URL) {
+    #print(w)
+    #print(V(graph1)[v]$name)
+    if(V(graph1)[v]$name == w) {
+      V(graph1)[v]$popularity_ranking <- filter(popularity_ranking, URL == w)$`Country Rank`
+      V(graph1)[v]$claim <- filter(popularity_ranking, URL == w)$`Claim`
+      V(graph1)[v]$total_visits <- (as.numeric(gsub(",", ".", filter(popularity_ranking, URL == w)$`Total Visits (K)`)) * 1000)
+      print(gsub(",", ".", filter(popularity_ranking, URL == w)$`Total Visits (K)`))
+      V(graph1)[v]$referrals <- filter(popularity_ranking, URL == w)$`-> referrals (%)`
+      V(graph1)[v]$redaktionsstaerke <- filter(popularity_ranking, URL == w)$`Redaktionsstärke`
+      V(graph1)[v]$standort <- filter(popularity_ranking, URL == w)$`Standort laut Impressum`
+    }
+  }
+}
 
 all_articles %>%
   filter(date_published == "" | is.na(date_published)) %>%
   group_by(website_id) %>%
   summarise(n()) %>% View()
-
 
 # close the db connection
 dbDisconnect(con)
