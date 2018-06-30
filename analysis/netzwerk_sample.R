@@ -14,6 +14,7 @@ library("readxl")
 library("purrr")
 library("visNetwork")
 library("scales")
+library("gridExtra")
 
 con <- dbConnect(RMySQL::MySQL(),
                  dbname = "ba",
@@ -56,10 +57,10 @@ sample_links_internal <- sample_links %>%
   mutate(link_url = str_remove(link_url, "www.")) %>%
   mutate(link_url = str_remove(link_url, "/")) %>%
   filter(!(link_url==website_url)) %>%
-  inner_join((all_websites %>% 
+  inner_join((all_websites %>%
                mutate(url = str_remove(url, "http.{0,1}://")) %>%
                mutate(url = str_remove(url, "www.")) %>%
-               mutate(url = str_remove(url, "/"))), 
+               mutate(url = str_remove(url, "/"))),
              by=c("link_url" = "url"))
 
 sample_links_clean <- sample_links %>%
@@ -82,11 +83,12 @@ flat_sample_links_internal <- sample_links_internal %>%
 graph1 <- graph_from_data_frame(flat_sample_links_internal)
 
 # create the undirected graph
+g1_undirected_collapse <- as.undirected(graph1, mode = "collapse")
 g1_undirected_each <- as.undirected(graph1, mode = "each")
-g1_undirected <- as.undirected(graph1, mode = "mutual")
+g1_undirected_mutual <- as.undirected(graph1, mode = "mutual")
 
 # render networks with visNetwork, select field for id and hover
-setwd("./../render_networks")
+#setwd("./../render_networks")
 graph1 %>% visIgraph() %>%
   visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE) #%>%
   #visSave(file = "network_internal_size_of_deg_in_indexed.html", selfcontained = FALSE)
@@ -104,33 +106,30 @@ graph1 %>% visIgraph() %>%
   visSave(file = "internal-interactive-network.html")
 
 # render interactive, undirected network with vertex metrics
-g1_undirected %>% visIgraph() %>%
+g1_undirected_mutual %>% visIgraph() %>%
   visOptions(nodesIdSelection = TRUE) %>%
   visInteraction(navigationButtons = TRUE) %>%
   visEvents(selectNode = "function(properties) {
             alert(
               'Website: ' + this.body.data.nodes.get(properties.nodes[0]).id + '\\n' + 'Degree: ' + this.body.data.nodes.get(properties.nodes[0]).deg + '\\n' + 'Incoming Degrees: ' + this.body.data.nodes.get(properties.nodes[0]).deg_in + '\\n' + 'Outgoing Degree: ' + this.body.data.nodes.get(properties.nodes[0]).deg_out + '\\n' + 'Veröffentlichte Artikel: ' + this.body.data.nodes.get(properties.nodes[0]).article_count + '\\n' + 'Closeness (In&Out): ' + this.body.data.nodes.get(properties.nodes[0]).closen + '\\n' + 'Betweenness: ' + this.body.data.nodes.get(properties.nodes[0]).betw + '\\n' + 'Degree: ' + this.body.data.nodes.get(properties.nodes[0]).deg + '\\n'
             )
-            }") %>%
+            }") #%>%
   visSave(file = "internal-interactive-network-undirected.html")
 
 # calculate centrality values
-V(g1_undirected)$deg <- degree(g1_undirected, mode="all")
-V(g1_undirected)$deg_in <- degree(g1_undirected, mode="in")
-V(g1_undirected)$deg_out <- degree(g1_undirected, mode="out")
+V(g1_undirected_mutual)$deg <- degree(g1_undirected_mutual, mode="all")
 
-V(g1_undirected)$closen <- closeness(g1_undirected, mode = "all")
-V(g1_undirected)$closen_in <- closeness(g1_undirected, mode = "in")
-V(g1_undirected)$closen_out <- closeness(g1_undirected, mode = "out")
+V(g1_undirected_mutual)$closen <- closeness(g1_undirected_mutual, mode = "all")
 
-V(g1_undirected)$betw <- betweenness(g1_undirected)
+V(g1_undirected_mutual)$betw <- betweenness(g1_undirected_mutual)
 
-V(g1_undirected)$transit <- transitivity(g1_undirected, type = "local")
+V(g1_undirected_mutual)$transit <- transitivity(g1_undirected_mutual, type = "local")
 
+E(g1_undirected_mutual)$weight <- E(g1_undirected_mutual)$linked_count
 
 # set attributes for plotting
-V(g1_undirected)$size <- V(g1_undirected)$closen * 800
-E(g1_undirected)$width <- E(g1_undirected)$weight / 20
+V(g1_undirected_mutual)$size <- V(g1_undirected_mutual)$closen * 800
+E(g1_undirected_mutual)$width <- E(g1_undirected_mutual)$weight / 20
 
 ##### change graph attributes #####
 
@@ -256,29 +255,30 @@ g_edge_dens <- edge_density(graph1) # density: 0.2766798
 
 ### network centralization ###
 
-g_centr_deg <- centr_degree(graph1, mode = "all")$centralization # degree centralisation: 0.3047521
-g_centr_betw <- centr_betw(graph1)$centralization # betweenness centralisation: 0.1261669
-# TODO: find formula for proximity prestige -> would tell us, how well embedded the website is into the network
-g_centr_clo <- centr_clo(graph1)$centralization # closeness centralisation: 0.1348803
-g_centr_eigen <- centr_eigen(graph1)$centralization # eigen-vector centralisation: 0.5440952
+g_centr_deg <- centr_degree(graph1, mode = "all")$centralization # degree centralisation: 0.3099
+g_centr_deg_in <- centr_degree(graph1, mode = "in")$centralization # 0.5237
+g_centr_deg_out <- centr_degree(graph1, mode = "out")$centralization # 0.5692
 
-centr_degree(graph1, mode = "in")$centralization # 0.3142292
-centr_degree(graph1, mode = "out")$centralization # 0.541502
+g_centr_betw <- centr_betw(graph1)$centralization # betweenness centralisation: 0.1421
+g_centr_clo <- centr_clo(graph1)$centralization # closeness centralisation: 0.1421
+g_centr_eigen <- centr_eigen(graph1)$centralization # eigen-vector centralisation: 0.4956
 
 ### network reciprocity ###
+g_recip <- reciprocity(graph1) # reciprocity: 0.3488
 
-g_recip <- reciprocity(graph1)
+### network transitivity ###
+g_transi <- transitivity(g1_undirected_mutual, type = "global") # transitivity: 0.4161
 
 g_network_metrics <- g_edge_dens %>% tibble() %>%
   add_column(g_centr_betw) %>%
   add_column(g_centr_deg) %>%
+  add_column(g_centr_deg_in) %>%
+  add_column(g_centr_deg_out) %>%
   add_column(g_centr_clo) %>%
   add_column(g_centr_eigen) %>%
   add_column(g_recip) %>%
-  select(density = ".", "reciprocity" = "g_recip", "betweenness centralisation" = "g_centr_betw", "degree centralisation" = "g_centr_deg", "closeness centralisation" = "g_centr_clo", "eigenvector centralisation" = "g_centr_eigen")
-
-### network transitivity ###
-transitivity(g1_undirected, type = "global")
+  add_column(g_transi) %>%
+  select(density = ".", "reciprocity" = "g_recip", "transitivity" = "g_transi", "betweenness centralisation" = "g_centr_betw", "degree centralisation" = "g_centr_deg", "degree centralisation (incoming)" = "g_centr_deg_in", "degree centralisation (outgoing)" = "g_centr_deg_out",  "closeness centralisation" = "g_centr_clo", "eigenvector centralisation" = "g_centr_eigen")
 
 # write to csv file
 write.csv(g_network_metrics, file = "network_metrics.csv")
@@ -303,7 +303,27 @@ g_v_values_list <- as.tibble(V(graph1)$name) %>%
 
 write.csv(g_v_values_list, file = "vertex_metrics.csv")
 
-as_long_data_frame(graph1) %>% View()
+### linked count for incoming and outgoing edges per vertex
+
+g_linked_count_incoming <- as_long_data_frame(graph1) %>%
+  group_by(to_name) %>%
+  mutate(to_linked_count = sum(linked_count)) %>%
+  summarise(to_deg_in = to_deg_in[1], to_linked_count = to_linked_count[1])
+
+g_linked_count_outgoing <- as_long_data_frame(graph1) %>%
+  group_by(from_name) %>%
+  mutate(from_linked_count = sum(linked_count)) %>%
+  summarise(from_deg_out = from_deg_out[1], from_linked_count = from_linked_count[1])
+
+g_linked_count_total <- g_linked_count_incoming %>%
+  full_join(g_linked_count_outgoing, by = c("to_name" = "from_name"), copy = TRUE) %>%
+  select("Name der Website" = to_name, "Anzahl der incoming Degrees" = to_deg_in, "Anzahl der eingehenden Links" = to_linked_count, "Anzahl der outgoing Degrees" = from_deg_out, "Anzahl der ausgehenden Links" = from_linked_count)
+
+png(filename = "vertices_with_linked_counts.png", width = 1200, height = 800, units = "px")
+grid.table(g_linked_count_total)
+dev.off()
+
+write.csv(g_linked_count_total, file = "vertices_with_linked_counts.csv")
 
 ### calculate weight of degrees (in/out) for the vertices ###
 
@@ -440,8 +460,6 @@ network_internal_link_count_per_page <- as_long_data_frame(graph1) %>%
   group_by(name = from_name) %>%
   summarise(count = sum(linked_count))
 
-as_long_data_frame(graph2) %>% View()
-
 network_full_link_count_per_page <- as_long_data_frame(graph2) %>%
   select(name = from_name, linked_count, to) %>%
   group_by(name) %>%
@@ -471,12 +489,10 @@ ggsave("Anzahl der ausgehenden Verbindungen mit Gewichtung.png", plot = pp_10, w
 
 g_c_optimal <- cluster_optimal(graph1)
 #g_c_spinglass <- cluster_spinglass(graph1, weights = E(graph1)$weight)
-# modularity(g_c)
-# membership(g_c)
+# modularity(g_c_optimal)
+# membership(g_c_optimal)
 g_c_spinglass <- cluster_spinglass(graph1, weights = E(graph1)$weight)
 g_c_walktrap <- cluster_walktrap(graph1, weights = E(graph1)$weight)
-
-getwd()
 
 # plot and save to disk
 #png(filename = "communities_optimal_algo.png", width = 1024, height = 1024, units = "px")
@@ -484,16 +500,14 @@ plot(g_c_optimal, graph1, vertex.frame.color = "transparent", vertex.label.cex=.
 #dev.off()
 
 # take a look at the undirected graph
-g_c_fast_greedy <- cluster_fast_greedy(g1_undirected_each)
-plot(g_c_fast_greedy, as.undirected(g1_undirected))
-
-plot(as.dendrogram(g_c_fast_greedy))
+g_c_fast_greedy <- cluster_fast_greedy(g1_undirected_mutual)
+plot(g_c_fast_greedy, as.undirected(g1_undirected_mutual))
 
 #plot
 plot(g_c_fast_greedy, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.12)
-png(filename = "./analysis/render_networks/communities_eigen_algo.png", width = 1024, height = 1024, units = "px")
+#png(filename = "./analysis/render_networks/communities_eigen_algo.png", width = 1024, height = 1024, units = "px")
 plot(g_c, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.15)
-dev.off()
+#dev.off()
 
 # see http://igraph.org/r/doc/triad_census.html
 triad_census(graph1)
@@ -505,23 +519,49 @@ motifs(graph1, 3)
 ##### cohesion & blocks #####
 
 cohesion(graph1)
-plot(cohesive_blocks(g1_undirected), g1_undirected)
-plot(cohesive_blocks(igraph::simplify(g1_undirected)), g1_undirected)
+plot(cohesive_blocks(g1_undirected_mutual), g1_undirected_mutual)
+plot(cohesive_blocks(igraph::simplify(g1_undirected_mutual)), g1_undirected_mutual)
 
-g1_undirected_simple <- igraph::simplify(g1_undirected)
+g1_undirected_simple <- igraph::simplify(g1_undirected_mutual)
+g1_undirected_each_simple <- igraph::simplify(g1_undirected_each)
 
 c_b <- cohesive_blocks(g1_undirected_simple)
+c_bb <- cohesive_blocks(g1_undirected_each_simple)
 length(c_b)
 
-plot(c_b, g1_undirected)
+plot(c_b, g1_undirected_mutual)
+plot(c_bb, g1_undirected_each)
 
 blocks(c_b)
 cohesion(c_b)
 
-# plot the most cohesive block
-induced_subgraph(g1_undirected_simple, blocks(c_b)[[4]]) %>% plot()
+blocks(c_bb)
 
-g_c_b <- graphs_from_cohesive_blocks(c_b, g1_undirected_simple)
+blocks(c_bb)[[9]]
+g_c_bb <- induced_subgraph(g1_undirected_each_simple, blocks(c_bb)[[9]])
+g_c_bb %>% cluster_fast_greedy() %>% plot(., g_c_bb)
+edge_density(g_c_bb)
+
+# plot the most cohesive block
+g_c_b <- induced_subgraph(g1_undirected_simple, blocks(c_b)[[4]])
+
+V(g_c_b)$deg_in <- degree(g_c_b, mode = "in")
+V(g_c_b)$deg_out <- degree(g_c_b, mode = "out")
+
+V(g_c_b)$size <- V(g_c_b)$deg_in * 5
+
+g_c_b %>% visIgraph() %>%
+  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE) %>%
+  visInteraction(navigationButtons = TRUE) %>%
+  visEvents(selectNode = "function(properties) {
+            showCustomWidget(this.body.data.nodes.get(properties.nodes[0]));
+            }",
+            selectEdge = "function(properties) {
+            showCustomEdgeWidget(this.body.data.edges.get(properties.edges[0]));
+            }") %>%
+  visSave(file = "example.html")
+
+#g_c_b <- graphs_from_cohesive_blocks(c_b, g1_undirected_simple)
 
 ################### experiments #####
 

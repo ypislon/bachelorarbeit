@@ -76,11 +76,13 @@ graph2 <- graph_from_data_frame(flat_sample_links_without_platforms)
 graph2 %>% visIgraph() %>%
   visOptions(highlightNearest = list(enabled = TRUE, hover = FALSE, degree = 0), nodesIdSelection = TRUE)
 
+plot(graph2)
+
 graph2_as_data_frame <- as_long_data_frame(graph2) %>% as.tibble()
 
 graph2_vertex_metrics_incoming <- graph2_as_data_frame %>%
   group_by(to_name) %>%
-  summarise(deg_in = n(), linked_count_total_incoming = sum(linked_count), average_weight_of_incoming_edge = (sum(linked_count) / n()), poi_deg_in_times_linked_count = (sum(linked_count) * n()), page_ranking = round(to_page_ranking[1], 6), stren = to_stren[1]) %>%
+  summarise(deg_in = n(), linked_count_total_incoming = sum(linked_count), average_weight_of_incoming_edge = (sum(linked_count) / n()), poi_deg_in_times_linked_count = (sum(linked_count) * n()), page_ranking = round(to_page_ranking[1], 6)) %>%
   select(-poi_deg_in_times_linked_count)
 
 graph2_vertex_metrics_outgoing <- graph2_as_data_frame %>%

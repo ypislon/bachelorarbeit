@@ -206,7 +206,6 @@ var changeSizeOfNode = function(props) {
 }
 
 
-
 //////// helper source code for visNetwork file
 
 var helperSrc = `
