@@ -263,7 +263,7 @@ ac %>%
 
 ## save graphics
 
-getwd()
+
 
 ggsave("Anzahl der veröffentlichten Artikel.png", plot = pa_1, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
 ggsave("Artikellänge je Website.png", plot = pa_2, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")

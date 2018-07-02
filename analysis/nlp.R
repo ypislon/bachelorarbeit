@@ -73,15 +73,30 @@ emotion_results <- tidy_articles_text %>%
 View(emotion_results)
 
 # add emotion sentiments to vertices of graph
-V(graph1)$positive <- emotion_results$Positive
-V(graph1)$negative <- emotion_results$Negative
-V(graph1)$anger <- emotion_results$Anger
-V(graph1)$anticipation <- emotion_results$Anticipation
-V(graph1)$disgust <- emotion_results$Disgust
-V(graph1)$fear <- emotion_results$Fear
-V(graph1)$joy <- emotion_results$Joy
-V(graph1)$sadness <- emotion_results$Sadness
-V(graph1)$surprise <- emotion_results$Surprise
-V(graph1)$trust <- emotion_results$Trust
+
+emotion_results_2 <- emotion_results %>% 
+  inner_join((all_websites %>%
+               mutate(url = str_remove(url, "http.{0,1}://")) %>%
+               mutate(url = str_remove(url, "www.")) %>%
+               mutate(url = str_remove(url, "/"))),
+    by=c("name" = "name"))
+
+for (v in V(graph1)) {
+  for (w in emotion_results_2$url) {
+    if(V(graph1)[v]$name == w) {
+      V(graph1)[v]$positive <- filter(emotion_results_2, url == w)$Positive
+      V(graph1)[v]$negative <- filter(emotion_results_2, url == w)$Negative
+      V(graph1)[v]$anticipation <- filter(emotion_results_2, url == w)$Anticipation
+      V(graph1)[v]$anger <- filter(emotion_results_2, url == w)$Anger
+      V(graph1)[v]$disgust <- filter(emotion_results_2, url == w)$Disgust
+      V(graph1)[v]$fear <- filter(emotion_results_2, url == w)$Fear
+      V(graph1)[v]$joy <- filter(emotion_results_2, url == w)$Joy
+      V(graph1)[v]$sadness <- filter(emotion_results_2, url == w)$Sadness
+      V(graph1)[v]$surprise <- filter(emotion_results_2, url == w)$Surprise
+      V(graph1)[v]$trust <- filter(emotion_results_2, url == w)$Trust
+    }
+  }
+}
+
 
 ##### STOP NLP #####

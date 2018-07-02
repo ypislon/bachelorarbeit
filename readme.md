@@ -1,28 +1,8 @@
-# BA
+# Struktur-Analyse von Fake-News-Netzwerken
 
-## Used frameworks, libraries and tools
+Bachelorarbeit von Elena Riedlinger und Immanuel von Detten
+Hochschule der Medien, Stuttgart
 
-### Windows 8.1
+In diesem Repository befindet sich die Anwendung, die sowohl die Datenbank einrichtet, das Web Crawling durchführt und die Verlinkungen zwischen den Websites analysiert. 
 
-Project is set up on Windows.
-
-### Python
-
-It's expected that you're using Python 3.6, Anaconda distribution.
-
-TODO:
-how to setup anaconda and env with conda
-
-#### Scrapy
-
-###### Installation
-    conda install --name ENV Scrapy
-
-###### Usage
-    activate ENV
-    scrapy crawl SPIDERNAME
-
-#### peewee
-
-###### Installation
-     conda install -n ENV -c conda-forge peewee
+Link zu interaktiven Netzwerken: https://ypislon.uber.space/bachelorarbeit/
