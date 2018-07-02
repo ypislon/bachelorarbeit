@@ -1,5 +1,4 @@
 ##### setup #####
-
 install.packages("igraph")
 install.packages("dplyr")
 install.packages("ggplot2")
@@ -38,15 +37,15 @@ library("DBI")
 library("tidygraph")
 # text mining tidy-style
 library("tidytext")
-#
+# piping - tidy-style
 library("magrittr")
-#
+# reading data from other files
 library("readr")
-#
+# reading excel sheets
 library("readxl")
-#
+# functions - tidy-style
 library("purrr")
-
+# create network visualizations which are interactive and exportable as html
 library("visNetwork")
 
 # watch a nice demo of igraph...
@@ -278,13 +277,7 @@ g4 %>%
   add_layout_(with_kk()) %>%
   visNetwork::visIgraph() %>%
   visInteraction(navigationButtons = TRUE) %>%
-  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE) %>%
-  visSave("network-full-nodes.html", selfcontained = FALSE)
-
-##### network of sample websites and mainstream media outlets #####
-
-
-
+  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE)
 
 ##### network of sample websites and internet platforms #####
 
@@ -366,8 +359,7 @@ ggplot(ac, mapping = aes(x = date_only, color = name)) + geom_line(stat = "bin",
 
 ggplot(ac, mapping = aes(x = date_only, fill = name)) + stat_count()
 
-
-##### Graph of articles (and links) by one platform #####
+##### graph of articles (and links) by one platform #####
 
 selected_articles <- all_articles %>%
   filter(website_id == 9)
@@ -380,157 +372,28 @@ s_links <- selected_links %>%
 
 g5 <- graph_from_data_frame(s_links)
 
-#E(g4)$width = E(g4)$
 f_deg <- degree(g5, mode="in")
 V(g5)$size <- f_deg*0.01
-
-#vertex_attr(g5)
-
-#View(V(g5)$size[4577])
 
 V(g5)$color <- ifelse(!is.na(as.numeric(V(g5)$name)), "blue", "green")
 
 g5 <- set_vertex_attr(g5, "label.color", value = "None")
 
-g5 %>% visIgraph() %>% visInteraction(navigationButtons = TRUE) %>% visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>% visExport(name = "article_graph")
+g5 %>% visIgraph() %>%
+  visInteraction(navigationButtons = TRUE) %>%
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+  visExport(name = "article_graph")
 
-# TODO doesnt work yet 
-
-#V(g5)$label.color <- ifelse(as.numeric(V(g5)[v]$size > 0.1), "black", "yellow")
-
-#V(g5)$color <- ifelse(!is.na(as.numeric(V(g5)$name)), "blue", "green")
-
-#for (v in V(g5)) {
-#  if(V(g5)[v]$size == 0.1) {
-#    print(v)
-#  } else {
-#    V(g5)[v]$label = ""
-#  }
-#}
-# END TODO
-
-
-
-#%>% visInteraction(navigationButtons = TRUE)
-
-### idee: vielleicht alle "zentralsten" bezugsquellen der jeweiligen artikel mappen und im netzwerk darstellen! 
-
-##### START NLP #####
-
-# lets get the text first
-# --> so we can analyse the sentiment score per website
-sql_statement_text = "SELECT article.id, article.content_text, article.website_id, website.name FROM ba.article INNER JOIN ba.website ON article.website_id=website.id"
-
-articles_text <- con %>% tbl(sql(sql_statement_text)) %>% collect()
-
-# change up the encoding to prevent umlaut problems
-Encoding(articles_text$content_text) <- "UTF-8"
-Encoding(articles_text$name) <- "UTF-8"
-
-tidy_articles_text <- articles_text %>%
-  unnest_tokens(word, content_text) %>%
-  drop_na() %>%
-  as.tibble()
-
-tidy_articles_text %>% count(word, sort = TRUE)
-
-tidy_articles_text %>% group_by(name) %>% summarise(n()) %>% View()
-
-# stopwörter holen
-# utf-encoding (!)
-# englische stopwörter
-stop_words <- read.delim("c:/hdm/bachelorarbeit/analysis/text_mining/resources/german_stopwords_plain.txt", header=FALSE, stringsAsFactors=FALSE)
-stop_words_en <- read.delim("c:/hdm/bachelorarbeit/analysis/text_mining/resources/english_stopwords.txt", header=FALSE, stringsAsFactors=FALSE)
-Encoding(additional_stop_words$value) <- "UTF-8"
-additional_stop_words <- c("für", "the", "sei", "o", "über", "to", "of", "r", "on", "for", "is", "s", "from", "teilen", "var", "2", "können") %>% as.tibble()
-
-stop_words %<>%
-  as.tibble() %>%
-  add_row(V1=stop_words_en$V1) %>%
-  add_row(V1=additional_stop_words$value) %$%
-  str_remove_all(V1, ",") %>%
-  enc2utf8() %>%
-  str_squish() %>%
-  as.tibble()
-
-tidy_articles_text <- tidy_articles_text %>% anti_join(stop_words, by = c("word" = "value"))
-
-tx <- tidy_articles_text %>%
-  group_by(word) %>%
-  summarize(word_count = n()) %>%
-  filter(word_count > 10000) %>%
-  arrange(desc(word_count))
-
-tx
-
-# word counts per website
-tidy_articles_text %>% count(word, name, sort = TRUE) %>% filter(n > 5000) %>% View()
-
-### german / austrian party lookup
-
-parties <- c("spd", "fdp", "csu", "cdu", "grünen", "grün", "afd", "npd", "spö", "linke") %>% as.tibble()
-
-txx <- tx
-
-txx %>% filter(word %in% parties$value) %>% View()
-
-### calculate a score for each website for each emotion...
-# load emotion lexicon
-emotion_index <- read_excel("c://hdm/bachelorarbeit/analysis/text_mining/resources/NRC-Emotion-Lexicon-v0.92.xlsx")
-
-emotion_index %<>%
-  select(English = 'English (en)', German = 'German (de)', "Positive", "Negative", "Anger", "Anticipation", "Disgust", "Fear", "Joy", "Sadness", "Surprise", "Trust") %>%
-  filter(German != "NO TRANSLATION")
-
-# TODO: work on the way of joining - no "double" words in value column
-# in this example, we filter the website for the most doubles
-emotion_results <- tidy_articles_text %>%
-  inner_join(emotion_index, by = c("word" = "German")) %>%
-  group_by(name) %>%
-  arrange(website_id) %>%
-  summarise_if(is.numeric, sd) %>%
-  select(-id, -website_id)
-
-View(emotion_results)
-
-# add emotion sentiments to vertices of graph
-V(graph1)$positive <- emotion_results$Positive
-V(graph1)$negative <- emotion_results$Negative
-V(graph1)$anger <- emotion_results$Anger
-V(graph1)$anticipation <- emotion_results$Anticipation
-V(graph1)$disgust <- emotion_results$Disgust
-V(graph1)$fear <- emotion_results$Fear
-V(graph1)$joy <- emotion_results$Joy
-V(graph1)$sadness <- emotion_results$Sadness
-V(graph1)$surprise <- emotion_results$Surprise
-V(graph1)$trust <- emotion_results$Trust
-
-##### STOP NLP #####
-
-##### import ranking of similarweb and add to the graph ######
-
-popularity_ranking <- read_excel("c://hdm/bachelorarbeit/analysis/text_mining/resources/Sample_Charakterisierung.xlsx") %>% filter(!is.na(URL))
-
-for (v in V(graph1)) {
-  for (w in popularity_ranking$URL) {
-    #print(w)
-    #print(V(graph1)[v]$name)
-    if(V(graph1)[v]$name == w) {
-      V(graph1)[v]$popularity_ranking <- filter(popularity_ranking, URL == w)$`Country Rank`
-      V(graph1)[v]$claim <- filter(popularity_ranking, URL == w)$`Claim`
-      V(graph1)[v]$total_visits <- (as.numeric(gsub(",", ".", filter(popularity_ranking, URL == w)$`Total Visits (K)`)) * 1000)
-      print(gsub(",", ".", filter(popularity_ranking, URL == w)$`Total Visits (K)`))
-      V(graph1)[v]$referrals <- filter(popularity_ranking, URL == w)$`-> referrals (%)`
-      V(graph1)[v]$redaktionsstaerke <- filter(popularity_ranking, URL == w)$`Redaktionsstärke`
-      V(graph1)[v]$standort <- filter(popularity_ranking, URL == w)$`Standort laut Impressum`
-    }
-  }
-}
+### idee: vielleicht alle "zentralsten" bezugsquellen der jeweiligen artikel mappen und im netzwerk darstellen!
 
 all_articles %>%
   filter(date_published == "" | is.na(date_published)) %>%
   group_by(website_id) %>%
   summarise(n()) %>% View()
+
+g6 <- graph(edges=c(1,2, 2,3, 3, 1), n=3, directed=F)
+
+plot(g6)
 
 # close the db connection
 dbDisconnect(con)

@@ -15,6 +15,7 @@ library("purrr")
 library("visNetwork")
 library("scales")
 library("gridExtra")
+library("colorRamps")
 
 con <- dbConnect(RMySQL::MySQL(),
                  dbname = "ba",
@@ -75,23 +76,16 @@ flat_sample_links_internal <- sample_links_internal %>%
   group_by(website_url, link_url) %>%
   summarise(linked_count = n(), id[1])
 
-#as.data.frame(V(graph1)) %>%
-  #inner_join(article_count_per_website, by = c("name" = "url"))
-
 ##### generate graph #####
 
 graph1 <- graph_from_data_frame(flat_sample_links_internal)
 
-# create the undirected graph
+# create the undirected graphs
 g1_undirected_collapse <- as.undirected(graph1, mode = "collapse")
 g1_undirected_each <- as.undirected(graph1, mode = "each")
 g1_undirected_mutual <- as.undirected(graph1, mode = "mutual")
 
 # render networks with visNetwork, select field for id and hover
-#setwd("./../render_networks")
-graph1 %>% visIgraph() %>%
-  visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE, degree = 0), nodesIdSelection = TRUE) #%>%
-  #visSave(file = "network_internal_size_of_deg_in_indexed.html", selfcontained = FALSE)
 
 # render interactive, directed network with vertex metrics
 graph1 %>% visIgraph() %>%
@@ -116,22 +110,32 @@ g1_undirected_mutual %>% visIgraph() %>%
             }") #%>%
   visSave(file = "internal-interactive-network-undirected.html")
 
-# calculate centrality values
-V(g1_undirected_mutual)$deg <- degree(g1_undirected_mutual, mode="all")
-
-V(g1_undirected_mutual)$closen <- closeness(g1_undirected_mutual, mode = "all")
-
-V(g1_undirected_mutual)$betw <- betweenness(g1_undirected_mutual)
-
-V(g1_undirected_mutual)$transit <- transitivity(g1_undirected_mutual, type = "local")
-
-E(g1_undirected_mutual)$weight <- E(g1_undirected_mutual)$linked_count
-
-# set attributes for plotting
-V(g1_undirected_mutual)$size <- V(g1_undirected_mutual)$closen * 800
-E(g1_undirected_mutual)$width <- E(g1_undirected_mutual)$weight / 20
-
 ##### change graph attributes #####
+
+# calculate centrality values for directed graph
+V(graph1)$deg <- degree(graph1, mode="all")
+V(graph1)$deg_in <- degree(graph1, mode="in")
+V(graph1)$deg_out <- degree(graph1, mode="out")
+
+V(graph1)$closen <- closeness(graph1, mode = "all")
+V(graph1)$closen_in <- closeness(graph1, mode = "in")
+V(graph1)$closen_out <- closeness(graph1, mode = "out")
+
+V(graph1)$betw <- betweenness(graph1)
+
+V(graph1)$eigenv <- as.numeric(eigen_centrality(graph1)$vector)
+V(graph1)$page_rank <- as.numeric(page_rank(graph1)$vector)
+
+#coreness(graph1, mode = "in") %>% as.tibble()
+
+#coreness(graph1, mode = c("all"))
+
+# change plot settings
+V(graph1)$size <- V(graph1)$deg_in * 0.7
+#V(graph1)$size <- as.numeric(V(graph1)$page_rank) * 200
+
+E(graph1)$weight <- E(graph1)$linked_count
+E(graph1)$width <- E(graph1)$weight / 20
 
 # add article count to graph
 for (v in V(graph1)) {
@@ -144,7 +148,7 @@ for (v in V(graph1)) {
   } else if(V(graph1)[v]$name == "noack-finsterwalde.de") {
     V(graph1)[v]$article_count = 67
   } else if(V(graph1)[v]$name == "news-for-friends.de") {
-      V(graph1)[v]$article_count = 3700
+    V(graph1)[v]$article_count = 3700
   } else if(V(graph1)[v]$name == "noch.info") {
     V(graph1)[v]$article_count = 546
   } else if(V(graph1)[v]$name == "smopo.ch") {
@@ -184,36 +188,6 @@ for (v in V(graph1)) {
   }
 }
 
-# calculate centrality values
-V(graph1)$deg <- degree(graph1, mode="all")
-V(graph1)$deg_in <- degree(graph1, mode="in")
-V(graph1)$deg_out <- degree(graph1, mode="out")
-
-V(graph1)$closen <- closeness(graph1, mode = "all")
-V(graph1)$closen_in <- closeness(graph1, mode = "in")
-V(graph1)$closen_out <- closeness(graph1, mode = "out")
-
-V(graph1)$betw <- betweenness(graph1)
-
-V(graph1)$eigenv <- as.numeric(eigen_centrality(graph1)$vector)
-V(graph1)$page_rank <- as.numeric(page_rank(graph1)$vector)
-
-#coreness(graph1, mode = "in") %>% as.tibble()
-
-#coreness(graph1, mode = c("all"))
-
-# change plot settings
-V(graph1)$size <- V(graph1)$deg_in
-V(graph1)$size <- as.numeric(V(graph1)$page_rank) * 200
-
-E(graph1)$weight <- E(graph1)$linked_count
-E(graph1)$width <- E(graph1)$weight / 20
-
-# take a peak at distribution of counted links
-ggplot(as.tibble(get.edge.attribute(graph1, "linked_count")), aes(x = value)) +
-  geom_density() +
-  lims(x = c(0, 100))
-
 # create index for weight of edges
 for (e in E(graph1)) {
   E(graph1)[e]$weight <- 0.2
@@ -221,7 +195,6 @@ for (e in E(graph1)) {
   if (E(graph1)[e]$linked_count > 60) {
     E(graph1)[e]$weight <- 30
     E(graph1)[e]$width <- 30
-    E(graph1)[e]$color <- "red"
   } else if (E(graph1)[e]$linked_count > 20) {
     E(graph1)[e]$weight <- 15
     E(graph1)[e]$width <- 15
@@ -246,6 +219,22 @@ for (v in V(graph1)) {
     V(graph1)[v]$size <- 5
   }
 }
+
+### undirected graph
+# calculate centrality values for undirected graph
+V(g1_undirected_mutual)$deg <- degree(g1_undirected_mutual, mode="all")
+
+V(g1_undirected_mutual)$closen <- closeness(g1_undirected_mutual, mode = "all")
+
+V(g1_undirected_mutual)$betw <- betweenness(g1_undirected_mutual)
+
+V(g1_undirected_mutual)$transit <- transitivity(g1_undirected_mutual, type = "local")
+
+E(g1_undirected_mutual)$weight <- E(g1_undirected_each)$linked_count
+
+# set attributes for plotting
+V(g1_undirected_mutual)$size <- V(g1_undirected_mutual)$deg * 2
+E(g1_undirected_mutual)$width <- E(g1_undirected_mutual)$weight / 20
 
 ##### calculate network metrics #####
 
@@ -319,11 +308,11 @@ g_linked_count_total <- g_linked_count_incoming %>%
   full_join(g_linked_count_outgoing, by = c("to_name" = "from_name"), copy = TRUE) %>%
   select("Name der Website" = to_name, "Anzahl der incoming Degrees" = to_deg_in, "Anzahl der eingehenden Links" = to_linked_count, "Anzahl der outgoing Degrees" = from_deg_out, "Anzahl der ausgehenden Links" = from_linked_count)
 
-png(filename = "vertices_with_linked_counts.png", width = 1200, height = 800, units = "px")
+#png(filename = "vertices_with_linked_counts.png", width = 1200, height = 800, units = "px")
 grid.table(g_linked_count_total)
-dev.off()
+#dev.off()
 
-write.csv(g_linked_count_total, file = "vertices_with_linked_counts.csv")
+#write.csv(g_linked_count_total, file = "vertices_with_linked_counts.csv")
 
 ### calculate weight of degrees (in/out) for the vertices ###
 
@@ -348,6 +337,8 @@ pp_1 <- ggplot(g_v_values_list, aes(x = name, fill = centr_degree)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
   theme(axis.title.x = element_text(vjust=0,hjust=.5))
+
+pp_1
 
 # plot
 pp_2 <- ggplot(g_v_values_list, aes(x = name, fill = centr_degree)) +
@@ -435,6 +426,11 @@ pp_5 <- ggplot(g_v_values, aes(x = name)) +
   theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
   theme(axis.title.x = element_text(vjust=0,hjust=.5))
 
+# plot - take a peak at distribution of counted links
+ggplot(as.tibble(get.edge.attribute(graph1, "linked_count")), aes(x = value)) +
+  geom_density() +
+  lims(x = c(0, 100))
+
 ##### calculate edge metrics #####
 
 g_e_values_list <- as_long_data_frame(graph1) %>%
@@ -471,7 +467,7 @@ ratio_links_internal_vs_full <- network_full_link_count_per_page %>%
 
 ## print graphs
 
-setwd("./../render_pictures")
+#setwd("./../render_pictures")
 ggsave("Eingehende_Verbindungen.png", plot = pp_1, width = 40, height = 30, units = "cm")
 ggsave("Ausgehende Verbindungen.png", plot = pp_2, width = 40, height = 30, units = "cm")
 ggsave("Anzahl der eingehenden Verlinkungen je Website.png", plot = pp_4, width = 40, height = 30, units = "cm")
@@ -485,18 +481,20 @@ ggsave("Anzahl der ausgehenden Verbindungen mit Gewichtung.png", plot = pp_10, w
 ##### community detection #####
 
 # which algorithms can be used for directed networks and which fits best for our network?
-# -> fitting best: optimal, spinglass (evtl. walktrap)
+# -> fitting best: optimal, spinglass, walktrap
 
 g_c_optimal <- cluster_optimal(graph1)
 #g_c_spinglass <- cluster_spinglass(graph1, weights = E(graph1)$weight)
+#g_c_walktrap <- cluster_walktrap(graph1, weights = E(graph1)$weight)
+
 # modularity(g_c_optimal)
 # membership(g_c_optimal)
 g_c_spinglass <- cluster_spinglass(graph1, weights = E(graph1)$weight)
 g_c_walktrap <- cluster_walktrap(graph1, weights = E(graph1)$weight)
 
 # plot and save to disk
-#png(filename = "communities_optimal_algo.png", width = 1024, height = 1024, units = "px")
-plot(g_c_optimal, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.15)
+#png(filename = "communities_optimal_algo.png", width = 1600, height = 1600, units = "px", res = 72)
+plot(g_c_optimal, graph1, vertex.frame.color = "transparent", vertex.label.cex=2, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.15)
 #dev.off()
 
 # take a look at the undirected graph
@@ -505,45 +503,40 @@ plot(g_c_fast_greedy, as.undirected(g1_undirected_mutual))
 
 #plot
 plot(g_c_fast_greedy, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.12)
-#png(filename = "./analysis/render_networks/communities_eigen_algo.png", width = 1024, height = 1024, units = "px")
-plot(g_c, graph1, vertex.frame.color = "transparent", vertex.label.cex=.8, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.15)
-#dev.off()
 
 # see http://igraph.org/r/doc/triad_census.html
 triad_census(graph1)
 # see http://igraph.org/r/doc/dyad_census.html
 dyad_census(graph1)
 
-motifs(graph1, 3)
-
 ##### cohesion & blocks #####
-
-cohesion(graph1)
-plot(cohesive_blocks(g1_undirected_mutual), g1_undirected_mutual)
-plot(cohesive_blocks(igraph::simplify(g1_undirected_mutual)), g1_undirected_mutual)
 
 g1_undirected_simple <- igraph::simplify(g1_undirected_mutual)
 g1_undirected_each_simple <- igraph::simplify(g1_undirected_each)
+V(g1_undirected_mutual)$deg <- degree(g1_undirected_mutual)
 
-c_b <- cohesive_blocks(g1_undirected_simple)
-c_bb <- cohesive_blocks(g1_undirected_each_simple)
-length(c_b)
 
-plot(c_b, g1_undirected_mutual)
-plot(c_bb, g1_undirected_each)
+c_b_mutual <- cohesive_blocks(g1_undirected_simple)
+c_b_each <- cohesive_blocks(g1_undirected_each_simple)
 
-blocks(c_b)
-cohesion(c_b)
+#png(filename = "cohesive_blocks.png", width = 1600, height = 1600, units = "px", res = 72)
+plot(c_b_mutual, g1_undirected_mutual, vertex.frame.color = "transparent", vertex.label.cex=2, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.3)
+#dev.off()
 
-blocks(c_bb)
+plot(c_b_each, g1_undirected_each)
 
-blocks(c_bb)[[9]]
-g_c_bb <- induced_subgraph(g1_undirected_each_simple, blocks(c_bb)[[9]])
-g_c_bb %>% cluster_fast_greedy() %>% plot(., g_c_bb)
-edge_density(g_c_bb)
+blocks(c_b_mutual)
+cohesion(c_b_mutual)
+length(c_b_mutual)
+
+blocks(c_b_mutual)
+
+# get a single block and render it
+blocks(c_b_each)[[9]]
+g_c_bb <- induced_subgraph(g1_undirected_each_simple, blocks(c_b_each)[[6]])
 
 # plot the most cohesive block
-g_c_b <- induced_subgraph(g1_undirected_simple, blocks(c_b)[[4]])
+g_c_b <- induced_subgraph(g1_undirected_simple, blocks(c_b_mutual)[[4]])
 
 V(g_c_b)$deg_in <- degree(g_c_b, mode = "in")
 V(g_c_b)$deg_out <- degree(g_c_b, mode = "out")
@@ -561,27 +554,37 @@ g_c_b %>% visIgraph() %>%
             }") %>%
   visSave(file = "example.html")
 
-#g_c_b <- graphs_from_cohesive_blocks(c_b, g1_undirected_simple)
+##### import ranking of similarweb and add to the graph's vertices ######
 
-################### experiments #####
+popularity_ranking <- read_excel("c://hdm/bachelorarbeit/analysis/text_mining/resources/Sample_Charakterisierung.xlsx") %>% filter(!is.na(URL))
 
-# eigen_centrality(graph1, weights = V(graph1)$linked_count)
+for (v in V(graph1)) {
+  for (w in popularity_ranking$URL) {
+    if(V(graph1)[v]$name == w) {
+      V(graph1)[v]$popularity_ranking <- filter(popularity_ranking, URL == w)$`Country Rank`
+      V(graph1)[v]$claim <- filter(popularity_ranking, URL == w)$`Claim`
+      V(graph1)[v]$total_visits <- (as.numeric(gsub(",", ".", filter(popularity_ranking, URL == w)$`Total Visits (K)`)) * 1000)
+      if(is.na(V(graph1)[v]$total_visits)) {
+        V(graph1)[v]$total_visits = 1
+      }
+      V(graph1)[v]$referrals <- filter(popularity_ranking, URL == w)$`-> referrals (%)`
+      V(graph1)[v]$redaktionsstaerke <- filter(popularity_ranking, URL == w)$`Redaktionsstärke`
+      V(graph1)[v]$standort <- filter(popularity_ranking, URL == w)$`Standort laut Impressum`
+    }
+  }
+}
 
-# centralization.degree(graph1)
+# plot graph with visits as the vertex size and with additional color scale
 
-graph1 %>% degree_distribution()
+V(graph1)$color <- round(sqrt(sqrt(V(graph1)$total_visits / 20)))
+V(graph1)$size <- V(graph1)$color
 
-plot(graph1)
+graph1$palette <- ygobb((round(max(V(graph1)$color)) + 1))
 
-assortativity(graph1, types1 = V(graph1))
-assortativity_degree(graph1)
-# assortativity_nominal calculates a correlation score for categorical variable (label) and position
-assortativity_nominal(graph1, types = V(graph1))
-
-compare(g_c_optimal, g_c_spinglass, method = "adjusted.rand")
-
-communities(g_c_optimal)
-membership(g_c_optimal)
+getwd()
+png(filename = "internal_network_size_page_visits.png", width = 1600, height = 1600, units = "px", res = 72)
+plot(graph1, vertex.frame.color = "transparent", vertex.label.cex=2, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=.3)
+dev.off()
 
 ##### construct subgraph with most dense block, adding authors #####
 
@@ -604,12 +607,31 @@ g33 <- graph_from_data_frame(flat_sample_links_internal) %>%
   vertex("Jürgen Fritz", shape = "square") +
   edge("Jürgen Fritz", "dieunbestechlichen.com", color = "red")
 
-g33 %>% visIgraph()
 
-plot(g33)
+png(filename = "authors_cooperation.png", width = 1600, height = 1600, units = "px", res = 72)
+plot(g33, vertex.frame.color = "transparent", vertex.size = 10, vertex.label.cex=2, vertex.label.color="blue", vertex.label.dist=1, vertex.label.degree=pi/2, edge.arrow.size=2, edge.size = 2)
 legend("topleft",
-       legend = c("Author", "Gründer", "Empfehlung", "Werbung"),
-       col = c("red", muted("red"), muted("green"), "yellow"),
-       fill = c("red", muted("red"), muted("green"), "yellow"),
-       cex = 0.8,
+       legend = c("Author", "Gründer", "Empfehlung", "Werbung", "Verlinkung"),
+       col = c("red", muted("red"), muted("green"), "yellow", "grey"),
+       fill = c("red", muted("red"), muted("green"), "yellow", "grey"),
+       cex = 2,
        title = "Kantenfarben")
+dev.off()
+
+##### experiments #####
+
+# eigen_centrality(graph1, weights = V(graph1)$linked_count)
+
+# centralization.degree(graph1)
+
+graph1 %>% degree_distribution()
+
+assortativity(graph1, types1 = V(graph1))
+assortativity_degree(graph1)
+# assortativity_nominal calculates a correlation score for categorical variable (label) and position
+assortativity_nominal(graph1, types = V(graph1))
+
+compare(g_c_optimal, g_c_spinglass, method = "adjusted.rand")
+
+communities(g_c_optimal)
+membership(g_c_optimal)

@@ -73,22 +73,22 @@ flat_sample_links_internal <- sample_links %>%
 
 ##### articles per website #####
 
-counted_articles <- all_articles %>% 
+counted_articles <- all_articles %>%
   filter(as.Date(date_published)>="2016-03-01" | is.na(date_published)) %>%
   inner_join(all_websites, by = c("website_id" = "id")) %>%
   group_by(name) %>%
   summarise(article_count = n(), id = website_id[1])
 
-pa_1 <- ggplot(counted_articles, aes(x = name, y = article_count), guide = guide_legend(title = "Name der Websites")) + 
-  geom_col() + 
+pa_1 <- ggplot(counted_articles, aes(x = name, y = article_count), guide = guide_legend(title = "Name der Websites")) +
+  geom_col() +
   labs(x = "Name der Website", y = "Anzahl der Artikel", title = "Anzahl der veröffentlichten Artikel im Zeitraum ") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
   theme(axis.title.x = element_text(vjust=0,hjust=.5))
 
 ##### average number of words per article per website #####
 
-article_count_per_website <- all_articles %>% 
+article_count_per_website <- all_articles %>%
   inner_join(all_websites, by = c("website_id" = "id")) %>%
   filter(content_text != "" | content_text != " " | !is.na(content_text)) %>%
   filter(as.Date(date_published)>="2016-03-01" | is.na(date_published)) %>%
@@ -96,7 +96,7 @@ article_count_per_website <- all_articles %>%
   group_by(website_id) %>%
   summarise(article_count = n())
 
-aaa <- all_articles %>% 
+aaa <- all_articles %>%
   inner_join(all_websites, by = c("website_id" = "id")) %>%
   filter(as.Date(date_published)>="2016-03-01" | is.na(date_published)) %>%
   select(id, content_text, website_id, name) %>%
@@ -107,11 +107,15 @@ aaa <- all_articles %>%
   as.tibble() %>%
   summarise(word_count = n(), article_count = article_count[1], avg_length = n() / article_count[1])
 
+aaa %>%
+  select("Website" = name, "Anzahl der veröffentlichten Artikel" = article_count, "Durchschnittliche Länge der Artikel (in Wörtern)" = avg_length) %>%
+  write.csv(file="sample_metrics.csv")
+
 pa_2 <- ggplot(aaa, aes(x = name, y = avg_length)) +
   geom_col() +
   labs(x = "Name der Website", y = "Durchschnittiche Artikellänge (in Wörtern) ", title = "Artikellänge je Website") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
   theme(axis.title.x = element_text(vjust=0,hjust=.5))
 
 # see the distribution of length of articles
@@ -125,29 +129,29 @@ aaaa <- all_articles %>%
   as.tibble() %>%
   summarise(word_count = n())
 
-pa_3 <- ggplot(aaaa, aes(x = word_count)) + 
+pa_3 <- ggplot(aaaa, aes(x = word_count)) +
   geom_histogram(bins = 100) +
-  scale_x_continuous(limits = c(0, 1700)) + 
+  scale_x_continuous(limits = c(0, 1700)) +
   labs(x = "Anzahl der Wörter", y = "Anzahl der Artikel ", title = "Verteilung der Artikellänge") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
   theme(axis.title.x = element_text(vjust=0,hjust=.5))
 
-pa_4 <- ggplot(aaaa, aes(x = word_count)) + 
+pa_4 <- ggplot(aaaa, aes(x = word_count)) +
   geom_density() +
-  scale_x_continuous(limits = c(0, 2500)) + 
+  scale_x_continuous(limits = c(0, 2500)) +
   labs(x = "Anzahl der Wörter", y = "Anzahl der Artikel ", title = "Verteilung der Artikellänge") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
-  theme(axis.title.x = element_text(vjust=0,hjust=.5))
-
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(axis.title.x = element_text(vjust=0,hjust=.5)) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank())
+  
 ##### average number of links per article per website
 
 aab <- all_articles %>%
   inner_join(all_links, by = c("id" = "article_id")) %>%
   filter(as.Date(date_published)>="2016-03-01" | is.na(date_published)) %>%
   select(id, content_text, website_id) %>%
-  group_by(id) %>% 
+  group_by(id) %>%
   summarise(n = n(), website_id = website_id[1]) %>%
   group_by(website_id) %>%
   summarise(link_count = sum(n)) %>%
@@ -158,9 +162,9 @@ aac <- all_articles %>%
   inner_join(all_links, by = c("id" = "article_id")) %>%
   inner_join(all_websites, by = c("website_id" = "id")) %>%
   filter(as.Date(date_published)>="2016-03-01" | is.na(date_published)) %>%
-  filter(str_detect(link_url , regex(platforms))) %>% 
+  filter(str_detect(link_url , regex(platforms))) %>%
   select(id, content_text, website_id, name) %>%
-  group_by(id) %>% 
+  group_by(id) %>%
   summarise(n = n(), website_id = website_id[1], name = first(name)) %>%
   group_by(website_id) %>%
   summarise(link_count = sum(n), name = first(name)) %>%
@@ -169,83 +173,104 @@ aac <- all_articles %>%
 
 aad <- aab %>%
   inner_join(aac, by = c("website_id" = "website_id")) %>%
-  select(website_id, avg_links = avg_link_per_article.x, avg_links_without_platforms = avg_link_per_article.y, name)
+  select(website_id, name, avg_links = avg_link_per_article.x, avg_links_without_platforms = avg_link_per_article.y)
 
 # plot
-pa_5 <- ggplot(aad, aes(x = name)) + 
+pa_5 <- ggplot(aad, aes(x = name)) +
   geom_col(aes(y = avg_links, fill = "blue")) +
-  geom_col(aes(y = avg_links_without_platforms, fill = "red")) + 
+  geom_col(aes(y = avg_links_without_platforms, fill = "red")) +
   labs(x = "Name der Website", y = "Durchschnittliche Anzahl der Links", title = "Durchschnittliche Anzahl der Links pro Artikel") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
-  theme(axis.title.x = element_text(vjust=0,hjust=.5)) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
+  theme(axis.title.x = element_text(vjust=0,hjust=.5)) +
   guides(fill = guide_legend(title = "Anzahl der Verlinkungen \nmit/ohne Plattformen"))
+
+aad %>%
+  select("Name" = name, "Durchschnittliche Links pro Artikel" = avg_links, "Durchschnittliche Links pro Artikel (ohne Plattformen)" = avg_links_without_platforms) %>%
+  write.csv("sample_metrics_avg_links_per_article.csv")
 
 ##### articles by date #####
 
 ##### number of articles for all sites #####
 
-aa <- all_articles %>% 
-  inner_join(all_websites, by=c("website_id" = "id")) %>% 
+aa <- all_articles %>%
+  inner_join(all_websites, by=c("website_id" = "id")) %>%
   group_by(name) %>%
   summarise(number_of_articles = n())
 
 pa_6 <- ggplot(aa, mapping = aes(x = name, y = number_of_articles)) +
   geom_col() +
   labs(x = "Name der Website", y = "Anzahl der Artikel", title = "Veröffentlichte Artikel im Zeitraum von März 2016 bis März 2018") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
   guides(fill = guide_legend(title = "Anzahl der Verlinkungen \nmit/ohne Plattformen"))
 
 # get published articles by date in line graph
 
-ab <- all_articles %>% 
-  inner_join(all_websites, by=c("website_id" = "id")) %>% 
+ab <- all_articles %>%
+  inner_join(all_websites, by=c("website_id" = "id")) %>%
   mutate(date_only = as.Date(str_extract(all_articles$date_published, "([0-9]{4}-[0-9]{2}-[0-9]{2})"))) %>%
   filter(!is.na(date_only)) %>%
-  filter(date_only >= "2016-03-01" & date_only < "2018-03-01") %>% 
+  filter(date_only >= "2016-03-01" & date_only < "2018-03-01") %>%
   group_by(date_only) %>%
   summarise(n = n())
 
-pa_7 <- ggplot(ab, mapping = aes(x = date_only, y = n)) + 
-  geom_line() + 
+pa_7 <- ggplot(ab, mapping = aes(x = date_only, y = n)) +  geom_line() +
   geom_smooth() +
   labs(x = "Monat", y = "Anzahl der veröffentlichen Artikel", title = "Veröffentlichte Artikel im Zeitverlauf") +
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"))
-
-# articles by website 
-ac <- all_articles %>% 
-  inner_join(all_websites, by=c("website_id" = "id")) %>% 
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank())
+  
+# articles by website
+ac <- all_articles %>%
+  inner_join(all_websites, by=c("website_id" = "id")) %>%
   mutate(date_only = as.Date(str_extract(all_articles$date_published, "([0-9]{4}-[0-9]{2}-[0-9]{2})"))) %>%
   filter(!is.na(date_only)) %>%
-  filter(date_only >= "2016-03-01" & date_only < "2018-03-01") %>% 
+  filter(date_only >= "2016-03-01" & date_only < "2018-03-01") %>%
   #filter(name != "Epoch Times") %>%
   select(id, name, date_only)
 
 # binwidth changes the width of bins, in this case, the interval to paint a point
-pa_8 <- ggplot(ac, mapping = aes(x = date_only, color = name)) + 
-  geom_line(stat = "bin", binwidth = 30, size = 1.2) + 
+pa_8 <- ggplot(ac, mapping = aes(x = date_only, color = name)) +
+  geom_line(stat = "bin", binwidth = 15, size = 1.2) +
   labs(x = "Monat", y = "Anzahl der veröffentlichen Artikel", title = "Artikel im Zeitverlauf je Website") +
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
   guides(color = guide_legend(title = "Namen der Websites"))
 pa_8
 
-pa_9 <- ggplot(ac, mapping = aes(x = date_only, fill = name)) + geom_histogram(binwidth = 30)  + 
+pa_9 <- ggplot(ac, mapping = aes(x = date_only, fill = name)) + geom_histogram(binwidth = 15)  +
   labs(x = "Monat", y = "Anzahl der veröffentlichen Artikel", title = "Artikel im Zeitverlauf je Website") +
-  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm")) +
+  theme(plot.margin=unit(c(.5,.5,.5,.5),"cm"), legend.position = "bottom", legend.title = element_blank()) +
   guides(fill = guide_legend(title = "Namen der Websites"))
 pa_9
 
+# export numbers
+ac %>%
+  group_by(month = floor_date(date_only, "month")) %>%
+  group_by(name, month) %>%
+  summarise(count = n()) %>%
+  write.csv(file = "article_per_month_per_page.csv")
+
+# export numbers
+ac %>%
+  group_by(month = floor_date(date_only, "month")) %>%
+  group_by(month) %>%
+  summarise(count = n()) %>%
+  write.csv(file = "article_per_month_total.csv")
+
 ##### count links from internal network vs. all links #####
+
+# TODO
 
 ## save graphics
 
-ggsave("Anzahl der veröffentlichten Artikel.png", plot = pa_1, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Artikellänge je Website.png", plot = pa_2, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Verteilung der Artikellänge.png", plot = pa_3, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Verteilung der Artikellänge.png", plot = pa_4, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Durchschnittliche Anzahl der Links pro Artikel.png", plot = pa_5, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Veröffentlichte Artikel im Sample.png", plot = pa_6, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Veröffentlichte Artikel im Zeitverlauf.png", plot = pa_7, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Artikel im Zeitverlauf je Website.png", plot = pa_8, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
-ggsave("Artikel im Zeitverlauf je Website.png", plot = pa_9, width = 40, height = 30, units = "cm", path = "./analysis/render_pictures/")
+getwd()
+
+ggsave("Anzahl der veröffentlichten Artikel.png", plot = pa_1, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Artikellänge je Website.png", plot = pa_2, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Verteilung der Artikellänge.png", plot = pa_3, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Verteilung der Artikellänge.png", plot = pa_4, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Durchschnittliche Anzahl der Links pro Artikel.png", plot = pa_5, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Veröffentlichte Artikel im Sample.png", plot = pa_6, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Veröffentlichte Artikel im Zeitverlauf.png", plot = pa_7, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Artikel im Zeitverlauf je Website.png", plot = pa_8, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
+ggsave("Artikel im Zeitverlauf je Website.png", plot = pa_9, width = 20, height = 15, units = "cm", dpi = 320, path = "./analysis/render_pictures/")
